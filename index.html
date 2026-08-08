@@ -368,6 +368,138 @@
   .priority-strip .p-item:last-child { border-right: none; }
   .priority-strip .p-item b { color: var(--green-bright); }
 
+  /* ---- Analytics ---- */
+  .charts-section {
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 24px 26px 30px;
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 30px;
+    border-top: 1px solid var(--line);
+  }
+  @media (max-width: 780px) {
+    .charts-section {
+      grid-template-columns: 1fr;
+      gap: 24px;
+      padding: 22px 18px 26px;
+    }
+  }
+
+  /* Donut */
+  .donut-wrap { position: relative; width: 164px; margin: 6px auto 0; }
+  .donut { width: 164px; height: 164px; display: block; }
+  .donut-track { fill: none; stroke: rgba(28,26,20,0.10); stroke-width: 17; }
+  .donut-val {
+    fill: none;
+    stroke-width: 17;
+    transition: stroke-dasharray 0.45s ease, stroke-dashoffset 0.45s ease;
+  }
+  .donut-blocks { stroke: var(--green-bright); }
+  .donut-habits { stroke: var(--brass); }
+  .donut-center {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+  .donut-pct {
+    font-family: 'Fraunces', serif;
+    font-size: 33px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .donut-sub {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9.5px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-top: 6px;
+  }
+  .donut-legend {
+    margin-top: 18px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .legend-row {
+    display: flex; align-items: center; gap: 9px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 2px;
+    background: var(--dot, var(--green-bright));
+    flex-shrink: 0;
+  }
+  .legend-row b {
+    margin-left: auto;
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  /* 7-day bars */
+  .bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 9px;
+    height: 196px;
+    padding-top: 6px;
+  }
+  .bar-col {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center;
+    height: 100%;
+    min-width: 0;
+  }
+  .bar-val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-bottom: 5px;
+    line-height: 1;
+  }
+  .bar-track {
+    flex: 1;
+    width: 100%;
+    background: rgba(28,26,20,0.05);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+  }
+  .bar-fill {
+    width: 100%;
+    background: var(--green-bright);
+    transition: height 0.45s ease;
+  }
+  .bar-col.is-full .bar-fill { background: var(--green); }
+  .bar-col.is-today .bar-track { border-color: var(--brass); border-width: 1.5px; }
+  .bar-col.is-today .bar-day { color: var(--brass); font-weight: 600; }
+  .bar-day {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-top: 8px;
+  }
+  .bar-foot {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    color: var(--ink-soft);
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--line);
+    display: flex;
+    justify-content: space-between;
+  }
+  .bar-foot b { color: var(--ink); font-weight: 600; }
+
   .loading-note {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 12px;
@@ -547,12 +679,11 @@
     `;
 
     const dateKeyToday = fmtDate(new Date());
-    const todaysLog = state.habitLog[dateKeyToday] || [];
     const habitsHtml = `
       <div class="col col-habits">
         <div class="col-head">
           <h3>Habit Tracker</h3>
-          <span class="tally">${todaysLog.length}/${state.habits.length} today</span>
+          <span class="tally">${habitsDoneOn(dateKeyToday)}/${state.habits.length} today</span>
         </div>
         <div id="ops-habit-list">
           ${state.habits.map(h => renderHabitRow(h)).join('')}
@@ -578,7 +709,129 @@
     strip.innerHTML = ['Trading','Sandhurst','Final year','LinkedIn','Gym','Content','Investing']
       .map((p,i) => `<span class="p-item"><b>${i+1}</b> ${p}</span>`).join('');
 
+    renderCharts();
     attachHandlers(dateKey, dateKeyToday);
+  }
+
+  // Count only log entries that still map to a live habit — deleting a habit
+  // leaves its id behind in the log, which would otherwise inflate the totals.
+  function habitsDoneOn(dateKey) {
+    const log = state.habitLog[dateKey] || [];
+    return log.filter(id => state.habits.some(h => h.id === id)).length;
+  }
+
+  function renderCharts() {
+    const todayKey = fmtDate(new Date());
+
+    const habitTotal = state.habits.length;
+    const habitDone = habitsDoneOn(todayKey);
+    const todaysBlocks = state.scheduleAll[todayKey] || [];
+    const blockTotal = todaysBlocks.length;
+    const blockDone = todaysBlocks.filter(b => b.done).length;
+
+    const done = habitDone + blockDone;
+    const total = habitTotal + blockTotal;
+    const pct = total ? Math.round((done / total) * 100) : 0;
+
+    const R = 62;
+    const CIRC = 2 * Math.PI * R;
+    // Two arcs drawn head-to-tail so the ring matches the legend colours:
+    // schedule blocks first, then habits, then the uncompleted remainder.
+    const blockArc = total ? (blockDone / total) * CIRC : 0;
+    const habitArc = total ? (habitDone / total) * CIRC : 0;
+
+    const donutHtml = `
+      <div class="chart-panel">
+        <div class="col-head">
+          <h3>Today's Progress</h3>
+          <span class="tally">${pct}%</span>
+        </div>
+        <div class="donut-wrap">
+          <svg class="donut" viewBox="0 0 164 164" role="img"
+               aria-label="${done} of ${total} items complete today, ${pct} percent">
+            <circle class="donut-track" cx="82" cy="82" r="${R}"></circle>
+            <circle class="donut-val donut-blocks" cx="82" cy="82" r="${R}"
+                    stroke-dasharray="${blockArc.toFixed(2)} ${(CIRC - blockArc).toFixed(2)}"
+                    transform="rotate(-90 82 82)"></circle>
+            <circle class="donut-val donut-habits" cx="82" cy="82" r="${R}"
+                    stroke-dasharray="${habitArc.toFixed(2)} ${(CIRC - habitArc).toFixed(2)}"
+                    stroke-dashoffset="${(-blockArc).toFixed(2)}"
+                    transform="rotate(-90 82 82)"></circle>
+          </svg>
+          <div class="donut-center">
+            <div class="donut-pct">${pct}%</div>
+            <div class="donut-sub">${done}/${total} done</div>
+          </div>
+        </div>
+        <div class="donut-legend">
+          <div class="legend-row" style="--dot:var(--green-bright)">
+            <span class="legend-dot"></span> Schedule blocks <b>${blockDone}/${blockTotal}</b>
+          </div>
+          <div class="legend-row" style="--dot:var(--brass)">
+            <span class="legend-dot"></span> Habits <b>${habitDone}/${habitTotal}</b>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = fmtDate(d);
+      days.push({
+        key,
+        count: habitsDoneOn(key),
+        label: d.toLocaleDateString('en-GB', { weekday: 'short' }).charAt(0),
+        isToday: key === todayKey
+      });
+    }
+    // scaleMax is clamped only so bar heights never divide by zero; the
+    // displayed denominator must use the real habit count.
+    const scaleMax = Math.max(habitTotal, 1);
+    const weekTotal = days.reduce((sum, d) => sum + d.count, 0);
+    const weekPossible = habitTotal * 7;
+    const bestDay = days.reduce((a, b) => (b.count > a.count ? b : a), days[0]);
+
+    const barsHtml = `
+      <div class="chart-panel">
+        <div class="col-head">
+          <h3>Habits — Last 7 Days</h3>
+          <span class="tally">${weekTotal}/${weekPossible}</span>
+        </div>
+        <div class="bars">
+          ${days.map(d => {
+            const h = scaleMax ? (d.count / scaleMax) * 100 : 0;
+            const cls = [
+              d.isToday ? 'is-today' : '',
+              d.count > 0 && d.count === habitTotal ? 'is-full' : ''
+            ].join(' ').trim();
+            return `
+              <div class="bar-col ${cls}" title="${d.key}: ${d.count}/${habitTotal}">
+                <div class="bar-val">${d.count}</div>
+                <div class="bar-track">
+                  <div class="bar-fill" style="height:${h.toFixed(1)}%"></div>
+                </div>
+                <div class="bar-day">${d.label}</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        <div class="bar-foot">
+          <span>Best day <b>${bestDay.count}/${habitTotal}</b></span>
+          <span>Weekly average <b>${(weekTotal / 7).toFixed(1)}</b></span>
+        </div>
+      </div>
+    `;
+
+    let charts = document.querySelector('.charts-section');
+    if (!charts) {
+      charts = document.createElement('div');
+      charts.className = 'charts-section';
+      const strip = document.querySelector('.priority-strip');
+      strip.parentNode.insertBefore(charts, strip);
+    }
+    charts.innerHTML = donutHtml + barsHtml;
   }
 
   function renderHabitRow(h) {
