@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Daily Ops — The Global Monitor</title>
+<meta name="description" content="Personal daily schedule and habit tracker.">
+<meta name="theme-color" content="#1c1a14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Daily Ops">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    background: #eae3d2;
+  }
+  body {
+    font-family: 'Inter', sans-serif;
+    color: #1c1a14;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :root {
+    --paper: #eae3d2;
+    --paper-dim: #ded5bf;
+    --ink: #1c1a14;
+    --ink-soft: #57503f;
+    --green: #33553b;
+    --green-bright: #5c9a5f;
+    --brick: #a53a28;
+    --brass: #93712f;
+    --line: rgba(28,26,20,0.16);
+  }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+  .display { font-family: 'Fraunces', serif; }
+
+  #ops-root {
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: var(--paper);
+    background-image: radial-gradient(rgba(28,26,20,0.05) 0.6px, transparent 0.6px);
+    background-size: 3px 3px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ---- Header / SITREP ---- */
+  .sitrep {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 18px 26px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 14px;
+    border-bottom: 3px solid var(--green-bright);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .sitrep-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 26px;
+    letter-spacing: 0.02em;
+  }
+  .sitrep-title span { color: var(--green-bright); }
+  .sitrep-sub {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #b5ac95;
+    margin-top: 3px;
+  }
+  .countdowns { display: flex; gap: 28px; }
+  .countdown-item { text-align: right; }
+  .countdown-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--green-bright);
+    line-height: 1;
+  }
+  .countdown-lbl {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9.5px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #9d947c;
+    margin-top: 4px;
+  }
+
+  /* ---- Date nav ---- */
+  .datebar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--line);
+    background: var(--paper-dim);
+    position: sticky;
+    top: 73px;
+    z-index: 9;
+  }
+  .datebar button {
+    background: none;
+    border: 1px solid var(--ink);
+    color: var(--ink);
+    width: 30px; height: 30px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 15px;
+    line-height: 1;
+  }
+  .datebar button:hover { background: var(--ink); color: var(--paper); }
+  .datebar .cur-date {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 17px;
+    min-width: 210px;
+    text-align: center;
+  }
+  .datebar .today-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border: 1px solid var(--green);
+    color: var(--green);
+    background: none;
+    border-radius: 3px;
+    padding: 6px 10px;
+    cursor: pointer;
+    width: auto;
+    height: auto;
+  }
+  .datebar .today-btn:hover { background: var(--green); color: var(--paper); }
+
+  /* ---- Body grid ---- */
+  .body-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 0;
+    flex: 1;
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  @media (max-width: 780px) {
+    .body-grid { grid-template-columns: 1fr; }
+    .col-schedule { border-right: none !important; border-bottom: 1px solid var(--line); }
+    .sitrep { padding: 14px 18px; }
+    .sitrep-title { font-size: 21px; }
+    .countdown-num { font-size: 19px; }
+    .datebar { top: 66px; }
+  }
+  .col { padding: 24px 26px 30px; }
+  .col-schedule { border-right: 1px solid var(--line); }
+
+  .col-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 14px;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 8px;
+  }
+  .col-head h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 17px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: 0.01em;
+  }
+  .col-head .tally {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+
+  /* ---- Schedule blocks ---- */
+  .block-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; }
+  .block {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.4);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--cat-color, var(--green));
+    border-radius: 4px;
+  }
+  .block.done { opacity: 0.5; }
+  .block.done .block-label { text-decoration: line-through; }
+  .block-check {
+    width: 19px; height: 19px;
+    border: 1.5px solid var(--ink);
+    border-radius: 3px;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: none;
+  }
+  .block-check.checked { background: var(--green); border-color: var(--green); }
+  .block-check.checked::after { content: '✓'; color: var(--paper); font-size: 13px; line-height: 1; }
+  .block-time {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    width: 56px;
+    flex-shrink: 0;
+  }
+  .block-label { font-size: 14.5px; flex: 1; }
+  .block-cat {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-soft);
+  }
+  .block-del {
+    background: none; border: none; cursor: pointer;
+    color: var(--ink-soft); font-size: 17px; line-height: 1;
+    padding: 2px 4px;
+  }
+  .block-del:hover { color: var(--brick); }
+
+  .add-form {
+    display: flex; gap: 7px; flex-wrap: wrap;
+    padding-top: 12px; border-top: 1px dashed var(--line);
+  }
+  .add-form input[type=time] {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 7px 8px;
+    background: white;
+    width: 96px;
+  }
+  .add-form input[type=text] {
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 7px 9px;
+    background: white;
+    flex: 1;
+    min-width: 120px;
+  }
+  .add-form select {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 7px 6px;
+    background: white;
+  }
+  .add-form button {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    border-radius: 3px;
+    padding: 7px 14px;
+    cursor: pointer;
+  }
+  .add-form button:hover { background: var(--green); }
+  .empty-note {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    padding: 12px 2px;
+  }
+
+  /* ---- Habits ---- */
+  .habit-row {
+    display: flex; align-items: center; gap: 11px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+  }
+  .habit-row:last-of-type { border-bottom: none; }
+  .habit-name { font-size: 14px; flex: 1; min-width: 140px; }
+  .habit-streak {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    color: var(--brass);
+    white-space: nowrap;
+  }
+  .week-grid { display: flex; gap: 3px; }
+  .week-cell {
+    width: 16px; height: 16px;
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    background: white;
+  }
+  .week-cell.on { background: var(--green-bright); border-color: var(--green); }
+  .habit-del {
+    background: none; border: none; cursor: pointer;
+    color: var(--ink-soft); font-size: 15px; padding: 0 2px;
+  }
+  .habit-del:hover { color: var(--brick); }
+
+  .add-habit-form {
+    display: flex; gap: 7px; margin-top: 14px; padding-top: 12px;
+    border-top: 1px dashed var(--line);
+  }
+  .add-habit-form input {
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 7px 9px;
+    background: white;
+    flex: 1;
+  }
+  .add-habit-form button {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    border-radius: 3px;
+    padding: 7px 14px;
+    cursor: pointer;
+  }
+  .add-habit-form button:hover { background: var(--green); }
+
+  /* ---- Priority strip ---- */
+  .priority-strip {
+    display: flex;
+    border-top: 1px solid var(--line);
+    background: var(--ink);
+    padding: 11px 26px;
+    gap: 0;
+    overflow-x: auto;
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  .priority-strip .p-item {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #9d947c;
+    white-space: nowrap;
+    padding: 0 14px;
+    border-right: 1px solid rgba(255,255,255,0.15);
+  }
+  .priority-strip .p-item:first-child { padding-left: 0; }
+  .priority-strip .p-item:last-child { border-right: none; }
+  .priority-strip .p-item b { color: var(--green-bright); }
+
+  .loading-note {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    padding: 40px 20px;
+    text-align: center;
+  }
+
+  footer.site-foot {
+    text-align: center;
+    padding: 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-soft);
+    letter-spacing: 0.04em;
+  }
+</style>
+</head>
+<body>
+
+<div id="ops-root">
+  <div class="sitrep">
+    <div>
+      <div class="sitrep-title">DAILY <span>OPS</span></div>
+      <div class="sitrep-sub">The Global Monitor // Personal Instrument</div>
+    </div>
+    <div class="countdowns">
+      <div class="countdown-item">
+        <div class="countdown-num mono" id="ops-cd-aosb">—</div>
+        <div class="countdown-lbl">Days to AOSB</div>
+      </div>
+      <div class="countdown-item">
+        <div class="countdown-num mono" id="ops-cd-sandhurst">—</div>
+        <div class="countdown-lbl">Days to Sandhurst</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="datebar">
+    <button id="ops-prev">‹</button>
+    <div class="cur-date" id="ops-cur-date">—</div>
+    <button id="ops-next">›</button>
+    <button class="today-btn" id="ops-today">Today</button>
+  </div>
+
+  <div id="ops-body" class="loading-note">Loading planner…</div>
+
+  <footer class="site-foot">DAILY OPS — LOCAL DATA STORED ON THIS DEVICE</footer>
+</div>
+
+<script>
+(function() {
+  const CAT_COLORS = {
+    Trading: '#33553b',
+    Sandhurst: '#93712f',
+    Uni: '#4a5d7a',
+    Gym: '#a53a28',
+    Content: '#7a5230',
+    Personal: '#5c5647'
+  };
+
+  const STORE_KEYS = {
+    schedule: 'ops:schedule',
+    habits: 'ops:habits',
+    habitLog: 'ops:habitlog'
+  };
+
+  let state = { scheduleAll: {}, habits: [], habitLog: {} };
+  let currentDate = new Date();
+
+  function fmtDate(d) {
+    const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+  function fmtDisplay(d) {
+    return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  }
+  function daysBetween(a, b) {
+    const ms = 24*60*60*1000;
+    const da = new Date(a.getFullYear(), a.getMonth(), a.getDate());
+    const db = new Date(b.getFullYear(), b.getMonth(), b.getDate());
+    return Math.round((db - da) / ms);
+  }
+  function uid() { return Math.random().toString(36).slice(2, 9); }
+
+  function loadAll() {
+    try {
+      const s = localStorage.getItem(STORE_KEYS.schedule);
+      state.scheduleAll = s ? JSON.parse(s) : {};
+    } catch(e) { state.scheduleAll = {}; }
+
+    try {
+      const h = localStorage.getItem(STORE_KEYS.habits);
+      state.habits = h ? JSON.parse(h) : null;
+    } catch(e) { state.habits = null; }
+    if (!state.habits) {
+      state.habits = [
+        { id: uid(), name: 'NQ trading session logged' },
+        { id: uid(), name: 'Sandhurst prep — fitness/study' },
+        { id: uid(), name: 'Gym' },
+        { id: uid(), name: 'Uni / placement work block' },
+        { id: uid(), name: 'Global Monitor / LinkedIn content' },
+        { id: uid(), name: 'Investing check-in' }
+      ];
+      saveHabits();
+    }
+
+    try {
+      const l = localStorage.getItem(STORE_KEYS.habitLog);
+      state.habitLog = l ? JSON.parse(l) : {};
+    } catch(e) { state.habitLog = {}; }
+  }
+
+  function saveSchedule() {
+    try { localStorage.setItem(STORE_KEYS.schedule, JSON.stringify(state.scheduleAll)); }
+    catch(e) { console.error('save schedule failed', e); }
+  }
+  function saveHabits() {
+    try { localStorage.setItem(STORE_KEYS.habits, JSON.stringify(state.habits)); }
+    catch(e) { console.error('save habits failed', e); }
+  }
+  function saveHabitLog() {
+    try { localStorage.setItem(STORE_KEYS.habitLog, JSON.stringify(state.habitLog)); }
+    catch(e) { console.error('save habitlog failed', e); }
+  }
+
+  function updateCountdowns() {
+    const today = new Date();
+    const aosb = new Date(2026, 9, 12); // Oct 12 2026
+    const sandhurst = new Date(2027, 8, 1); // Sep 2027 target
+    const dAosb = daysBetween(today, aosb);
+    const dSandhurst = daysBetween(today, sandhurst);
+    document.getElementById('ops-cd-aosb').textContent = dAosb >= 0 ? dAosb : 'PASSED';
+    document.getElementById('ops-cd-sandhurst').textContent = dSandhurst >= 0 ? dSandhurst : 'PASSED';
+  }
+
+  function renderDateBar() {
+    document.getElementById('ops-cur-date').textContent = fmtDisplay(currentDate);
+  }
+
+  function renderBody() {
+    const dateKey = fmtDate(currentDate);
+    const blocks = (state.scheduleAll[dateKey] || []).slice().sort((a,b) => a.time.localeCompare(b.time));
+    const doneCount = blocks.filter(b => b.done).length;
+
+    const scheduleHtml = `
+      <div class="col col-schedule">
+        <div class="col-head">
+          <h3>Schedule</h3>
+          <span class="tally">${doneCount}/${blocks.length || 0}</span>
+        </div>
+        <div class="block-list" id="ops-block-list">
+          ${blocks.length === 0 ? '<div class="empty-note">No blocks yet — add today\'s plan below.</div>' : blocks.map(b => `
+            <div class="block ${b.done ? 'done' : ''}" style="--cat-color:${CAT_COLORS[b.cat] || '#33553b'}" data-id="${b.id}">
+              <button class="block-check ${b.done ? 'checked' : ''}" data-action="toggle" data-id="${b.id}"></button>
+              <span class="block-time mono">${b.time}</span>
+              <span class="block-label">${escapeHtml(b.label)}</span>
+              <span class="block-cat">${b.cat}</span>
+              <button class="block-del" data-action="del" data-id="${b.id}">×</button>
+            </div>
+          `).join('')}
+        </div>
+        <div class="add-form">
+          <input type="time" id="ops-new-time" value="09:00">
+          <input type="text" id="ops-new-label" placeholder="What's the block?">
+          <select id="ops-new-cat">
+            <option>Trading</option>
+            <option>Sandhurst</option>
+            <option>Uni</option>
+            <option>Gym</option>
+            <option>Content</option>
+            <option>Personal</option>
+          </select>
+          <button id="ops-add-block">Add</button>
+        </div>
+      </div>
+    `;
+
+    const dateKeyToday = fmtDate(new Date());
+    const todaysLog = state.habitLog[dateKeyToday] || [];
+    const habitsHtml = `
+      <div class="col col-habits">
+        <div class="col-head">
+          <h3>Habit Tracker</h3>
+          <span class="tally">${todaysLog.length}/${state.habits.length} today</span>
+        </div>
+        <div id="ops-habit-list">
+          ${state.habits.map(h => renderHabitRow(h)).join('')}
+        </div>
+        <div class="add-habit-form">
+          <input type="text" id="ops-new-habit" placeholder="Add a habit to track">
+          <button id="ops-add-habit">Add</button>
+        </div>
+      </div>
+    `;
+
+    const bodyEl = document.getElementById('ops-body');
+    bodyEl.className = 'body-grid';
+    bodyEl.innerHTML = scheduleHtml + habitsHtml;
+
+    let strip = document.querySelector('.priority-strip');
+    if (!strip) {
+      strip = document.createElement('div');
+      strip.className = 'priority-strip';
+      const foot = document.querySelector('.site-foot');
+      foot.parentNode.insertBefore(strip, foot);
+    }
+    strip.innerHTML = ['Trading','Sandhurst','Final year','LinkedIn','Gym','Content','Investing']
+      .map((p,i) => `<span class="p-item"><b>${i+1}</b> ${p}</span>`).join('');
+
+    attachHandlers(dateKey, dateKeyToday);
+  }
+
+  function renderHabitRow(h) {
+    const today = new Date();
+    let cells = '';
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = fmtDate(d);
+      const on = (state.habitLog[key] || []).includes(h.id);
+      cells += `<div class="week-cell ${on ? 'on' : ''}"></div>`;
+    }
+    let streak = 0;
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = fmtDate(d);
+      if ((state.habitLog[key] || []).includes(h.id)) streak++;
+      else break;
+    }
+    const todayKey = fmtDate(today);
+    const doneToday = (state.habitLog[todayKey] || []).includes(h.id);
+    return `
+      <div class="habit-row" data-id="${h.id}">
+        <button class="block-check ${doneToday ? 'checked' : ''}" data-action="habit-toggle" data-id="${h.id}"></button>
+        <span class="habit-name">${escapeHtml(h.name)}</span>
+        <span class="habit-streak">${streak > 0 ? streak + 'd streak' : ''}</span>
+        <div class="week-grid">${cells}</div>
+        <button class="habit-del" data-action="habit-del" data-id="${h.id}">×</button>
+      </div>
+    `;
+  }
+
+  function escapeHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function attachHandlers(dateKey, todayKey) {
+    document.getElementById('ops-add-block').onclick = () => {
+      const time = document.getElementById('ops-new-time').value || '09:00';
+      const label = document.getElementById('ops-new-label').value.trim();
+      const cat = document.getElementById('ops-new-cat').value;
+      if (!label) return;
+      if (!state.scheduleAll[dateKey]) state.scheduleAll[dateKey] = [];
+      state.scheduleAll[dateKey].push({ id: uid(), time, label, cat, done: false });
+      saveSchedule();
+      renderBody();
+    };
+
+    document.querySelectorAll('[data-action="toggle"]').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.dataset.id;
+        const list = state.scheduleAll[dateKey] || [];
+        const item = list.find(b => b.id === id);
+        if (item) item.done = !item.done;
+        saveSchedule();
+        renderBody();
+      };
+    });
+    document.querySelectorAll('[data-action="del"]').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.dataset.id;
+        state.scheduleAll[dateKey] = (state.scheduleAll[dateKey] || []).filter(b => b.id !== id);
+        saveSchedule();
+        renderBody();
+      };
+    });
+
+    document.getElementById('ops-add-habit').onclick = () => {
+      const input = document.getElementById('ops-new-habit');
+      const name = input.value.trim();
+      if (!name) return;
+      state.habits.push({ id: uid(), name });
+      saveHabits();
+      renderBody();
+    };
+    document.querySelectorAll('[data-action="habit-toggle"]').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.dataset.id;
+        if (!state.habitLog[todayKey]) state.habitLog[todayKey] = [];
+        const idx = state.habitLog[todayKey].indexOf(id);
+        if (idx >= 0) state.habitLog[todayKey].splice(idx, 1);
+        else state.habitLog[todayKey].push(id);
+        saveHabitLog();
+        renderBody();
+      };
+    });
+    document.querySelectorAll('[data-action="habit-del"]').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.dataset.id;
+        state.habits = state.habits.filter(h => h.id !== id);
+        saveHabits();
+        renderBody();
+      };
+    });
+  }
+
+  document.getElementById('ops-prev').onclick = () => {
+    currentDate.setDate(currentDate.getDate() - 1);
+    renderDateBar(); renderBody();
+  };
+  document.getElementById('ops-next').onclick = () => {
+    currentDate.setDate(currentDate.getDate() + 1);
+    renderDateBar(); renderBody();
+  };
+  document.getElementById('ops-today').onclick = () => {
+    currentDate = new Date();
+    renderDateBar(); renderBody();
+  };
+
+  updateCountdowns();
+  renderDateBar();
+  loadAll();
+  renderBody();
+
+  if ('serviceWorker' in navigator) {
+    // No service worker file shipped yet — placeholder for future offline support.
+  }
+})();
+</script>
+</body>
+</html>
