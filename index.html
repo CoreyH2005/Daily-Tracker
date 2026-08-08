@@ -500,6 +500,185 @@
   }
   .bar-foot b { color: var(--ink); font-weight: 600; }
 
+  /* ---- Day toolbar ---- */
+  .daybar-tools {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    flex-wrap: wrap;
+    padding: 9px 20px;
+    background: var(--paper-dim);
+    border-bottom: 1px solid var(--line);
+  }
+  .tool-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    border-radius: 3px;
+    padding: 6px 11px;
+    cursor: pointer;
+  }
+  .tool-btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .tool-btn.danger:hover { background: var(--brick); border-color: var(--brick); }
+
+  .viewing-badge {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: var(--brass);
+    color: var(--paper);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 7px 20px;
+  }
+  .viewing-badge.on { display: flex; }
+  .viewing-badge button {
+    background: none;
+    border: 1px solid rgba(255,255,255,0.5);
+    color: var(--paper);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    border-radius: 3px;
+    padding: 3px 8px;
+    cursor: pointer;
+  }
+  .viewing-badge button:hover { background: rgba(255,255,255,0.18); }
+
+  .cd-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-align: right;
+    font: inherit;
+  }
+  .cd-btn:hover .countdown-num { text-decoration: underline dotted; }
+
+  /* ---- Fitness ---- */
+  .fitness-section {
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 24px 26px 30px;
+    border-top: 1px solid var(--line);
+  }
+  @media (max-width: 780px) { .fitness-section { padding: 22px 18px 26px; } }
+  .fit-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  @media (max-width: 780px) { .fit-grid { grid-template-columns: repeat(2, 1fr); } }
+  .fit-card {
+    background: rgba(255,255,255,0.4);
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--metric-color, var(--green));
+    border-radius: 4px;
+    padding: 12px 13px 13px;
+  }
+  .fit-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .fit-val {
+    font-family: 'Fraunces', serif;
+    font-size: 25px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.1;
+    margin-top: 5px;
+  }
+  .fit-val.none { color: var(--ink-soft); font-size: 18px; }
+  .fit-meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-soft);
+    margin-top: 3px;
+  }
+  .fit-bar {
+    height: 5px;
+    background: rgba(28,26,20,0.08);
+    border-radius: 3px;
+    margin-top: 9px;
+    overflow: hidden;
+  }
+  .fit-bar span {
+    display: block;
+    height: 100%;
+    background: var(--metric-color, var(--green));
+    transition: width 0.45s ease;
+  }
+  .fit-delta { font-weight: 600; }
+  .fit-delta.good { color: var(--green); }
+  .fit-delta.bad { color: var(--brick); }
+
+  .fit-form {
+    display: flex; gap: 7px; flex-wrap: wrap;
+    margin-top: 16px; padding-top: 13px;
+    border-top: 1px dashed var(--line);
+  }
+  .fit-form select, .fit-form input {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 7px 8px;
+    background: white;
+  }
+  .fit-form input[type=text] { width: 110px; }
+  .fit-form button {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    background: var(--ink);
+    color: var(--paper);
+    border: none; border-radius: 3px;
+    padding: 7px 14px; cursor: pointer;
+  }
+  .fit-form button:hover { background: var(--green); }
+  .fit-hint {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    color: var(--ink-soft);
+    margin-top: 9px;
+    line-height: 1.5;
+  }
+
+  /* ---- Toast ---- */
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 26px;
+    transform: translateX(-50%) translateY(14px);
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    padding: 11px 18px;
+    border-radius: 4px;
+    border-left: 3px solid var(--green-bright);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease, transform 0.22s ease;
+    z-index: 50;
+    max-width: 90vw;
+  }
+  .toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.warn { border-left-color: var(--brick); }
+
   .loading-note {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 12px;
@@ -527,28 +706,44 @@
       <div class="sitrep-sub">Habit Tracker</div>
     </div>
     <div class="countdowns">
-      <div class="countdown-item">
+      <button class="cd-btn countdown-item" id="ops-edit-aosb" title="Click to change the date">
         <div class="countdown-num mono" id="ops-cd-aosb">—</div>
         <div class="countdown-lbl">Days to AOSB</div>
-      </div>
-      <div class="countdown-item">
+      </button>
+      <button class="cd-btn countdown-item" id="ops-edit-sandhurst" title="Click to change the date">
         <div class="countdown-num mono" id="ops-cd-sandhurst">—</div>
         <div class="countdown-lbl">Days to Sandhurst</div>
-      </div>
+      </button>
     </div>
   </div>
 
   <div class="datebar">
-    <button id="ops-prev">‹</button>
+    <button id="ops-prev" title="Previous day (←)">‹</button>
     <div class="cur-date" id="ops-cur-date">—</div>
-    <button id="ops-next">›</button>
-    <button class="today-btn" id="ops-today">Today</button>
+    <button id="ops-next" title="Next day (→)">›</button>
+    <button class="today-btn" id="ops-today" title="Jump to today (T)">Today</button>
+  </div>
+
+  <div class="viewing-badge" id="ops-viewing">
+    <span id="ops-viewing-text">Viewing another day</span>
+    <button id="ops-viewing-back">Back to today</button>
+  </div>
+
+  <div class="daybar-tools">
+    <button class="tool-btn" id="ops-copy-prev" title="Copy the previous day's blocks into this day">Copy previous day</button>
+    <button class="tool-btn" id="ops-save-tpl" title="Save this day's blocks as your default day">Save as template</button>
+    <button class="tool-btn" id="ops-apply-tpl" title="Add your saved template to this day">Apply template</button>
+    <button class="tool-btn" id="ops-export" title="Download a backup of all your data">Export backup</button>
+    <button class="tool-btn" id="ops-import" title="Restore from a backup file">Import backup</button>
+    <input type="file" id="ops-import-file" accept="application/json,.json" hidden>
   </div>
 
   <div id="ops-body" class="loading-note">Loading planner…</div>
 
   <footer class="site-foot">DAILY OPS — LOCAL DATA STORED ON THIS DEVICE</footer>
 </div>
+
+<div class="toast" id="ops-toast"></div>
 
 <script>
 (function() {
@@ -564,10 +759,27 @@
   const STORE_KEYS = {
     schedule: 'ops:schedule',
     habits: 'ops:habits',
-    habitLog: 'ops:habitlog'
+    habitLog: 'ops:habitlog',
+    template: 'ops:template',
+    targets: 'ops:targets',
+    fitness: 'ops:fitness'
   };
 
-  let state = { scheduleAll: {}, habits: [], habitLog: {} };
+  const DEFAULT_TARGETS = { aosb: '2026-10-12', sandhurst: '2027-09-01' };
+
+  // Lower is better for the run, higher is better for everything else.
+  const METRICS = {
+    run:      { label: '2.4km Run',  unit: 'mm:ss', kind: 'time',  lowerBetter: true,  color: '#a53a28' },
+    pressups: { label: 'Press-ups',  unit: 'reps',  kind: 'count', lowerBetter: false, color: '#33553b' },
+    situps:   { label: 'Sit-ups',    unit: 'reps',  kind: 'count', lowerBetter: false, color: '#93712f' },
+    msft:     { label: 'Bleep Test', unit: 'level', kind: 'level', lowerBetter: false, color: '#4a5d7a' }
+  };
+
+  let state = {
+    scheduleAll: {}, habits: [], habitLog: {},
+    template: [], targets: Object.assign({}, DEFAULT_TARGETS),
+    fitness: { entries: [], targets: {} }
+  };
   let currentDate = new Date();
 
   function fmtDate(d) {
@@ -611,33 +823,84 @@
       const l = localStorage.getItem(STORE_KEYS.habitLog);
       state.habitLog = l ? JSON.parse(l) : {};
     } catch(e) { state.habitLog = {}; }
+
+    try {
+      const t = localStorage.getItem(STORE_KEYS.template);
+      state.template = t ? JSON.parse(t) : [];
+    } catch(e) { state.template = []; }
+
+    try {
+      const g = localStorage.getItem(STORE_KEYS.targets);
+      state.targets = Object.assign({}, DEFAULT_TARGETS, g ? JSON.parse(g) : {});
+    } catch(e) { state.targets = Object.assign({}, DEFAULT_TARGETS); }
+
+    try {
+      const f = localStorage.getItem(STORE_KEYS.fitness);
+      const parsed = f ? JSON.parse(f) : null;
+      state.fitness = {
+        entries: (parsed && Array.isArray(parsed.entries)) ? parsed.entries : [],
+        targets: (parsed && parsed.targets) ? parsed.targets : {}
+      };
+    } catch(e) { state.fitness = { entries: [], targets: {} }; }
   }
 
-  function saveSchedule() {
-    try { localStorage.setItem(STORE_KEYS.schedule, JSON.stringify(state.scheduleAll)); }
-    catch(e) { console.error('save schedule failed', e); }
+  function save(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+    catch(e) {
+      console.error('save failed for ' + key, e);
+      toast('Could not save — device storage may be full', true);
+      return false;
+    }
   }
-  function saveHabits() {
-    try { localStorage.setItem(STORE_KEYS.habits, JSON.stringify(state.habits)); }
-    catch(e) { console.error('save habits failed', e); }
+
+  function saveSchedule() { save(STORE_KEYS.schedule, state.scheduleAll); }
+  function saveHabits()   { save(STORE_KEYS.habits, state.habits); }
+  function saveHabitLog() { save(STORE_KEYS.habitLog, state.habitLog); }
+  function saveTemplate() { save(STORE_KEYS.template, state.template); }
+  function saveTargets()  { save(STORE_KEYS.targets, state.targets); }
+  function saveFitness()  { save(STORE_KEYS.fitness, state.fitness); }
+
+  let toastTimer = null;
+  function toast(msg, isWarn) {
+    const el = document.getElementById('ops-toast');
+    el.textContent = msg;
+    el.className = 'toast on' + (isWarn ? ' warn' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.className = 'toast' + (isWarn ? ' warn' : ''); }, 2600);
   }
-  function saveHabitLog() {
-    try { localStorage.setItem(STORE_KEYS.habitLog, JSON.stringify(state.habitLog)); }
-    catch(e) { console.error('save habitlog failed', e); }
+
+  // Parses 'YYYY-MM-DD' as a local date. new Date('2026-10-12') would be parsed
+  // as UTC and can land on the previous day west of Greenwich.
+  function parseKey(key) {
+    const p = String(key || '').split('-');
+    if (p.length !== 3) return null;
+    const d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+    return isNaN(d.getTime()) ? null : d;
   }
 
   function updateCountdowns() {
     const today = new Date();
-    const aosb = new Date(2026, 9, 12); // Oct 12 2026
-    const sandhurst = new Date(2027, 8, 1); // Sep 2027 target
-    const dAosb = daysBetween(today, aosb);
-    const dSandhurst = daysBetween(today, sandhurst);
-    document.getElementById('ops-cd-aosb').textContent = dAosb >= 0 ? dAosb : 'PASSED';
-    document.getElementById('ops-cd-sandhurst').textContent = dSandhurst >= 0 ? dSandhurst : 'PASSED';
+    [['aosb', 'ops-cd-aosb'], ['sandhurst', 'ops-cd-sandhurst']].forEach(([key, elId]) => {
+      const target = parseKey(state.targets[key]);
+      const el = document.getElementById(elId);
+      if (!target) { el.textContent = '—'; return; }
+      const days = daysBetween(today, target);
+      el.textContent = days > 0 ? days : (days === 0 ? 'TODAY' : 'PASSED');
+    });
   }
 
   function renderDateBar() {
     document.getElementById('ops-cur-date').textContent = fmtDisplay(currentDate);
+    const isToday = fmtDate(currentDate) === fmtDate(new Date());
+    const badge = document.getElementById('ops-viewing');
+    badge.className = 'viewing-badge' + (isToday ? '' : ' on');
+    if (!isToday) {
+      const diff = daysBetween(new Date(), currentDate);
+      const rel = diff < 0
+        ? Math.abs(diff) + (Math.abs(diff) === 1 ? ' day ago' : ' days ago')
+        : diff + (diff === 1 ? ' day ahead' : ' days ahead');
+      document.getElementById('ops-viewing-text').textContent = 'Viewing ' + fmtDisplay(currentDate) + ' — ' + rel;
+    }
   }
 
   function renderBody() {
@@ -679,15 +942,20 @@
     `;
 
     const dateKeyToday = fmtDate(new Date());
+    const isToday = dateKey === dateKeyToday;
+    const isFuture = daysBetween(new Date(), currentDate) > 0;
     const habitsHtml = `
       <div class="col col-habits">
         <div class="col-head">
           <h3>Habit Tracker</h3>
-          <span class="tally">${habitsDoneOn(dateKeyToday)}/${state.habits.length} today</span>
+          <span class="tally">${habitsDoneOn(dateKey)}/${state.habits.length}${isToday ? ' today' : ''}</span>
         </div>
         <div id="ops-habit-list">
-          ${state.habits.map(h => renderHabitRow(h)).join('')}
+          ${state.habits.length === 0
+            ? '<div class="empty-note">No habits yet — add one below.</div>'
+            : state.habits.map(h => renderHabitRow(h, dateKey, isFuture)).join('')}
         </div>
+        ${isFuture ? '<div class="empty-note">Future day — habits can only be logged once the day arrives.</div>' : ''}
         <div class="add-habit-form">
           <input type="text" id="ops-new-habit" placeholder="Add a habit to track">
           <button id="ops-add-habit">Add</button>
@@ -709,8 +977,9 @@
     strip.innerHTML = ['Trading','Sandhurst','Final year','LinkedIn','Gym','Content','Investing']
       .map((p,i) => `<span class="p-item"><b>${i+1}</b> ${p}</span>`).join('');
 
-    renderCharts();
-    attachHandlers(dateKey, dateKeyToday);
+    renderCharts(dateKey);
+    renderFitness();
+    attachHandlers(dateKey, isFuture);
   }
 
   // Count only log entries that still map to a live habit — deleting a habit
@@ -720,8 +989,12 @@
     return log.filter(id => state.habits.some(h => h.id === id)).length;
   }
 
-  function renderCharts() {
-    const todayKey = fmtDate(new Date());
+  function renderCharts(viewKey) {
+    const todayKey = viewKey || fmtDate(new Date());
+    const realToday = fmtDate(new Date());
+    const heading = todayKey === realToday
+      ? "Today's Progress"
+      : 'Progress — ' + (parseKey(todayKey) || new Date()).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 
     const habitTotal = state.habits.length;
     const habitDone = habitsDoneOn(todayKey);
@@ -743,7 +1016,7 @@
     const donutHtml = `
       <div class="chart-panel">
         <div class="col-head">
-          <h3>Today's Progress</h3>
+          <h3>${heading}</h3>
           <span class="tally">${pct}%</span>
         </div>
         <div class="donut-wrap">
@@ -774,16 +1047,17 @@
       </div>
     `;
 
+    const anchor = parseKey(todayKey) || new Date();
     const days = [];
     for (let i = 6; i >= 0; i--) {
-      const d = new Date();
+      const d = new Date(anchor);
       d.setDate(d.getDate() - i);
       const key = fmtDate(d);
       days.push({
         key,
         count: habitsDoneOn(key),
         label: d.toLocaleDateString('en-GB', { weekday: 'short' }).charAt(0),
-        isToday: key === todayKey
+        isToday: key === realToday
       });
     }
     // scaleMax is clamped only so bar heights never divide by zero; the
@@ -834,29 +1108,33 @@
     charts.innerHTML = donutHtml + barsHtml;
   }
 
-  function renderHabitRow(h) {
-    const today = new Date();
+  // The week strip and streak are anchored to the day being viewed, so browsing
+  // back shows that day's context rather than always showing today's.
+  function renderHabitRow(h, anchorKey, isFuture) {
+    const anchor = parseKey(anchorKey) || new Date();
+    const todayKey = fmtDate(new Date());
     let cells = '';
     for (let i = 6; i >= 0; i--) {
-      const d = new Date(today);
+      const d = new Date(anchor);
       d.setDate(d.getDate() - i);
       const key = fmtDate(d);
       const on = (state.habitLog[key] || []).includes(h.id);
-      cells += `<div class="week-cell ${on ? 'on' : ''}"></div>`;
+      cells += `<div class="week-cell ${on ? 'on' : ''}" title="${key}"></div>`;
     }
     let streak = 0;
     for (let i = 0; i < 365; i++) {
-      const d = new Date(today);
+      const d = new Date(anchor);
       d.setDate(d.getDate() - i);
       const key = fmtDate(d);
+      if (key > todayKey) continue;
       if ((state.habitLog[key] || []).includes(h.id)) streak++;
       else break;
     }
-    const todayKey = fmtDate(today);
-    const doneToday = (state.habitLog[todayKey] || []).includes(h.id);
+    const done = (state.habitLog[anchorKey] || []).includes(h.id);
     return `
       <div class="habit-row" data-id="${h.id}">
-        <button class="block-check ${doneToday ? 'checked' : ''}" data-action="habit-toggle" data-id="${h.id}"></button>
+        <button class="block-check ${done ? 'checked' : ''}" data-action="habit-toggle"
+                data-id="${h.id}" ${isFuture ? 'disabled style="opacity:.35;cursor:not-allowed"' : ''}></button>
         <span class="habit-name">${escapeHtml(h.name)}</span>
         <span class="habit-streak">${streak > 0 ? streak + 'd streak' : ''}</span>
         <div class="week-grid">${cells}</div>
@@ -865,13 +1143,175 @@
     `;
   }
 
+  // --- Fitness -------------------------------------------------------------
+  // Values are stored as numbers: run in seconds, everything else as-is.
+  function parseMetricValue(metricKey, raw) {
+    const s = String(raw || '').trim();
+    if (!s) return null;
+    const m = METRICS[metricKey];
+    if (!m) return null;
+    if (m.kind === 'time') {
+      const parts = s.split(':');
+      if (parts.length === 2) {
+        const mins = Number(parts[0]), secs = Number(parts[1]);
+        if (!isFinite(mins) || !isFinite(secs) || secs >= 60 || mins < 0 || secs < 0) return null;
+        return mins * 60 + secs;
+      }
+      const n = Number(s);
+      return isFinite(n) && n > 0 ? n : null;
+    }
+    const n = Number(s);
+    return isFinite(n) && n >= 0 ? n : null;
+  }
+
+  function fmtMetricValue(metricKey, val) {
+    if (val === null || val === undefined) return '—';
+    const m = METRICS[metricKey];
+    if (m && m.kind === 'time') {
+      const mins = Math.floor(val / 60), secs = Math.round(val % 60);
+      return mins + ':' + String(secs).padStart(2, '0');
+    }
+    return String(Math.round(val * 10) / 10);
+  }
+
+  function latestEntry(metricKey) {
+    const list = state.fitness.entries
+      .filter(e => e.metric === metricKey)
+      .sort((a, b) => a.date.localeCompare(b.date));
+    return list.length ? list[list.length - 1] : null;
+  }
+
+  function bestEntry(metricKey) {
+    const m = METRICS[metricKey];
+    const list = state.fitness.entries.filter(e => e.metric === metricKey);
+    if (!list.length) return null;
+    return list.reduce((best, e) =>
+      (m.lowerBetter ? e.value < best.value : e.value > best.value) ? e : best, list[0]);
+  }
+
+  function renderFitness() {
+    const cards = Object.keys(METRICS).map(key => {
+      const m = METRICS[key];
+      const latest = latestEntry(key);
+      const best = bestEntry(key);
+      const targetRaw = state.fitness.targets[key];
+      const target = (targetRaw === null || targetRaw === undefined) ? null : Number(targetRaw);
+
+      let pct = 0, deltaHtml = '';
+      if (latest && target !== null && isFinite(target) && target > 0) {
+        pct = m.lowerBetter
+          ? Math.min(100, (target / latest.value) * 100)
+          : Math.min(100, (latest.value / target) * 100);
+        const hit = m.lowerBetter ? latest.value <= target : latest.value >= target;
+        if (hit) {
+          deltaHtml = '<span class="fit-delta good">target met</span>';
+        } else {
+          const gap = m.lowerBetter ? latest.value - target : target - latest.value;
+          deltaHtml = '<span class="fit-delta bad">' + fmtMetricValue(key, gap) + ' to go</span>';
+        }
+      }
+
+      return `
+        <div class="fit-card" style="--metric-color:${m.color}">
+          <div class="fit-name">${m.label}</div>
+          <div class="fit-val ${latest ? '' : 'none'}">${latest ? fmtMetricValue(key, latest.value) : 'no data'}</div>
+          <div class="fit-meta">
+            ${target !== null && isFinite(target)
+              ? 'Target ' + fmtMetricValue(key, target) + (deltaHtml ? ' · ' + deltaHtml : '')
+              : '<button class="tool-btn" style="padding:2px 7px;font-size:9.5px" data-action="set-target" data-metric="' + key + '">Set target</button>'}
+          </div>
+          <div class="fit-bar"><span style="width:${pct.toFixed(1)}%"></span></div>
+          <div class="fit-meta">${best ? 'Best ' + fmtMetricValue(key, best.value) + ' · ' + state.fitness.entries.filter(e=>e.metric===key).length + ' logged' : 'No entries yet'}</div>
+        </div>
+      `;
+    }).join('');
+
+    const html = `
+      <div class="col-head">
+        <h3>Fitness</h3>
+        <span class="tally">${state.fitness.entries.length} entries</span>
+      </div>
+      <div class="fit-grid">${cards}</div>
+      <div class="fit-form">
+        <select id="ops-fit-metric">
+          ${Object.keys(METRICS).map(k => `<option value="${k}">${METRICS[k].label}</option>`).join('')}
+        </select>
+        <input type="text" id="ops-fit-value" placeholder="e.g. 9:30">
+        <input type="date" id="ops-fit-date" value="${fmtDate(new Date())}">
+        <button id="ops-fit-add">Log</button>
+        <button id="ops-fit-target" class="tool-btn">Set target</button>
+      </div>
+      <div class="fit-hint">
+        Run as <b>mm:ss</b> (e.g. 9:30) · press-ups and sit-ups as reps · bleep test as level (e.g. 10.5).
+        Targets are yours to set — nothing here is an official standard, so check the current
+        requirements and enter them yourself.
+      </div>
+    `;
+
+    let sec = document.querySelector('.fitness-section');
+    if (!sec) {
+      sec = document.createElement('div');
+      sec.className = 'fitness-section';
+      const strip = document.querySelector('.priority-strip');
+      strip.parentNode.insertBefore(sec, strip);
+    }
+    sec.innerHTML = html;
+    attachFitnessHandlers();
+  }
+
+  function attachFitnessHandlers() {
+    document.getElementById('ops-fit-add').onclick = () => {
+      const key = document.getElementById('ops-fit-metric').value;
+      const raw = document.getElementById('ops-fit-value').value;
+      const date = document.getElementById('ops-fit-date').value || fmtDate(new Date());
+      const val = parseMetricValue(key, raw);
+      if (val === null) {
+        toast('Could not read "' + raw + '" — ' + (METRICS[key].kind === 'time' ? 'use mm:ss, e.g. 9:30' : 'use a number'), true);
+        return;
+      }
+      state.fitness.entries.push({ id: uid(), metric: key, value: val, date: date });
+      saveFitness();
+      document.getElementById('ops-fit-value').value = '';
+      toast(METRICS[key].label + ' logged: ' + fmtMetricValue(key, val));
+      renderFitness();
+    };
+
+    function setTargetFor(key) {
+      const m = METRICS[key];
+      const cur = state.fitness.targets[key];
+      const raw = prompt(
+        'Target for ' + m.label + (m.kind === 'time' ? ' (mm:ss)' : ' (' + m.unit + ')') + ':',
+        cur !== undefined && cur !== null ? fmtMetricValue(key, cur) : ''
+      );
+      if (raw === null) return;
+      if (!String(raw).trim()) {
+        delete state.fitness.targets[key];
+        saveFitness(); renderFitness();
+        toast('Target cleared for ' + m.label);
+        return;
+      }
+      const val = parseMetricValue(key, raw);
+      if (val === null) { toast('Could not read that target', true); return; }
+      state.fitness.targets[key] = val;
+      saveFitness(); renderFitness();
+      toast(m.label + ' target set to ' + fmtMetricValue(key, val));
+    }
+
+    document.getElementById('ops-fit-target').onclick = () => {
+      setTargetFor(document.getElementById('ops-fit-metric').value);
+    };
+    document.querySelectorAll('[data-action="set-target"]').forEach(btn => {
+      btn.onclick = () => setTargetFor(btn.dataset.metric);
+    });
+  }
+
   function escapeHtml(s) {
     const d = document.createElement('div');
     d.textContent = s;
     return d.innerHTML;
   }
 
-  function attachHandlers(dateKey, todayKey) {
+  function attachHandlers(dateKey, isFuture) {
     document.getElementById('ops-add-block').onclick = () => {
       const time = document.getElementById('ops-new-time').value || '09:00';
       const label = document.getElementById('ops-new-label').value.trim();
@@ -912,11 +1352,13 @@
     };
     document.querySelectorAll('[data-action="habit-toggle"]').forEach(btn => {
       btn.onclick = () => {
+        if (isFuture) return;
         const id = btn.dataset.id;
-        if (!state.habitLog[todayKey]) state.habitLog[todayKey] = [];
-        const idx = state.habitLog[todayKey].indexOf(id);
-        if (idx >= 0) state.habitLog[todayKey].splice(idx, 1);
-        else state.habitLog[todayKey].push(id);
+        if (!state.habitLog[dateKey]) state.habitLog[dateKey] = [];
+        const idx = state.habitLog[dateKey].indexOf(id);
+        if (idx >= 0) state.habitLog[dateKey].splice(idx, 1);
+        else state.habitLog[dateKey].push(id);
+        if (!state.habitLog[dateKey].length) delete state.habitLog[dateKey];
         saveHabitLog();
         renderBody();
       };
@@ -924,6 +1366,8 @@
     document.querySelectorAll('[data-action="habit-del"]').forEach(btn => {
       btn.onclick = () => {
         const id = btn.dataset.id;
+        const habit = state.habits.find(h => h.id === id);
+        if (habit && !confirm('Delete "' + habit.name + '"? Its history stays in your backups but disappears from the tracker.')) return;
         state.habits = state.habits.filter(h => h.id !== id);
         saveHabits();
         renderBody();
@@ -931,26 +1375,171 @@
     });
   }
 
-  document.getElementById('ops-prev').onclick = () => {
-    currentDate.setDate(currentDate.getDate() - 1);
+  // --- Day tools -----------------------------------------------------------
+  function copyBlocks(list) {
+    return (list || []).map(b => ({ id: uid(), time: b.time, label: b.label, cat: b.cat, done: false }));
+  }
+
+  function copyPreviousDay() {
+    const prev = new Date(currentDate);
+    prev.setDate(prev.getDate() - 1);
+    const prevKey = fmtDate(prev);
+    const source = state.scheduleAll[prevKey] || [];
+    if (!source.length) { toast('Nothing to copy — ' + fmtDisplay(prev) + ' has no blocks', true); return; }
+    const dateKey = fmtDate(currentDate);
+    state.scheduleAll[dateKey] = (state.scheduleAll[dateKey] || []).concat(copyBlocks(source));
+    saveSchedule();
+    renderBody();
+    toast('Copied ' + source.length + ' block' + (source.length === 1 ? '' : 's') + ' from ' + fmtDisplay(prev));
+  }
+
+  function saveAsTemplate() {
+    const dateKey = fmtDate(currentDate);
+    const blocks = state.scheduleAll[dateKey] || [];
+    if (!blocks.length) { toast('Add some blocks first, then save them as a template', true); return; }
+    state.template = blocks.map(b => ({ time: b.time, label: b.label, cat: b.cat }));
+    saveTemplate();
+    toast('Template saved — ' + blocks.length + ' block' + (blocks.length === 1 ? '' : 's'));
+  }
+
+  function applyTemplate() {
+    if (!state.template.length) { toast('No template saved yet — build a day and hit "Save as template"', true); return; }
+    const dateKey = fmtDate(currentDate);
+    state.scheduleAll[dateKey] = (state.scheduleAll[dateKey] || []).concat(copyBlocks(state.template));
+    saveSchedule();
+    renderBody();
+    toast('Applied template — ' + state.template.length + ' block' + (state.template.length === 1 ? '' : 's') + ' added');
+  }
+
+  // --- Backup --------------------------------------------------------------
+  function exportBackup() {
+    const payload = {
+      format: 'daily-ops-backup',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      schedule: state.scheduleAll,
+      habits: state.habits,
+      habitLog: state.habitLog,
+      template: state.template,
+      targets: state.targets,
+      fitness: state.fitness
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'daily-ops-backup-' + fmtDate(new Date()) + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast('Backup downloaded');
+  }
+
+  function importBackup(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      let data;
+      try { data = JSON.parse(reader.result); }
+      catch(e) { toast('That file is not valid JSON', true); return; }
+
+      if (!data || data.format !== 'daily-ops-backup') {
+        toast('That does not look like a Daily Ops backup', true);
+        return;
+      }
+      const counts = [
+        Object.keys(data.schedule || {}).length + ' scheduled day(s)',
+        (data.habits || []).length + ' habit(s)',
+        Object.keys(data.habitLog || {}).length + ' logged day(s)',
+        ((data.fitness && data.fitness.entries) || []).length + ' fitness entr(ies)'
+      ].join('\n');
+      if (!confirm('Restore this backup?\n\n' + counts + '\n\nThis REPLACES everything currently on this device.')) return;
+
+      state.scheduleAll = data.schedule || {};
+      state.habits      = Array.isArray(data.habits) ? data.habits : [];
+      state.habitLog    = data.habitLog || {};
+      state.template    = Array.isArray(data.template) ? data.template : [];
+      state.targets     = Object.assign({}, DEFAULT_TARGETS, data.targets || {});
+      state.fitness     = {
+        entries: (data.fitness && Array.isArray(data.fitness.entries)) ? data.fitness.entries : [],
+        targets: (data.fitness && data.fitness.targets) ? data.fitness.targets : {}
+      };
+      saveSchedule(); saveHabits(); saveHabitLog();
+      saveTemplate(); saveTargets(); saveFitness();
+      updateCountdowns(); renderDateBar(); renderBody();
+      toast('Backup restored');
+    };
+    reader.onerror = () => toast('Could not read that file', true);
+    reader.readAsText(file);
+  }
+
+  function editTarget(key, label) {
+    const cur = state.targets[key] || '';
+    const raw = prompt('Date for ' + label + ' (YYYY-MM-DD):', cur);
+    if (raw === null) return;
+    const trimmed = String(raw).trim();
+    if (!parseKey(trimmed)) { toast('Use the format YYYY-MM-DD, e.g. 2026-10-12', true); return; }
+    state.targets[key] = trimmed;
+    saveTargets();
+    updateCountdowns();
+    toast(label + ' set to ' + fmtDisplay(parseKey(trimmed)));
+  }
+
+  function shiftDay(delta) {
+    currentDate.setDate(currentDate.getDate() + delta);
     renderDateBar(); renderBody();
-  };
-  document.getElementById('ops-next').onclick = () => {
-    currentDate.setDate(currentDate.getDate() + 1);
-    renderDateBar(); renderBody();
-  };
-  document.getElementById('ops-today').onclick = () => {
+  }
+  function goToday() {
     currentDate = new Date();
     renderDateBar(); renderBody();
+  }
+
+  document.getElementById('ops-prev').onclick = () => shiftDay(-1);
+  document.getElementById('ops-next').onclick = () => shiftDay(1);
+  document.getElementById('ops-today').onclick = goToday;
+  document.getElementById('ops-viewing-back').onclick = goToday;
+
+  document.getElementById('ops-copy-prev').onclick = copyPreviousDay;
+  document.getElementById('ops-save-tpl').onclick = saveAsTemplate;
+  document.getElementById('ops-apply-tpl').onclick = applyTemplate;
+  document.getElementById('ops-export').onclick = exportBackup;
+
+  const importInput = document.getElementById('ops-import-file');
+  document.getElementById('ops-import').onclick = () => importInput.click();
+  importInput.onchange = () => {
+    if (importInput.files && importInput.files[0]) importBackup(importInput.files[0]);
+    importInput.value = '';
   };
 
+  document.getElementById('ops-edit-aosb').onclick = () => editTarget('aosb', 'AOSB');
+  document.getElementById('ops-edit-sandhurst').onclick = () => editTarget('sandhurst', 'Sandhurst');
+
+  // Arrow keys move between days, T jumps back to today — but never while the
+  // user is part-way through typing into a field.
+  document.addEventListener('keydown', (e) => {
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'select' || tag === 'textarea' || e.target.isContentEditable) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === 'ArrowLeft') { e.preventDefault(); shiftDay(-1); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); shiftDay(1); }
+    else if (e.key === 't' || e.key === 'T') { e.preventDefault(); goToday(); }
+  });
+
+  loadAll();
   updateCountdowns();
   renderDateBar();
-  loadAll();
   renderBody();
 
+  // Re-check the date when the tab is refocused, so a planner left open
+  // overnight rolls over instead of showing yesterday as "today".
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) { updateCountdowns(); renderDateBar(); renderBody(); }
+  });
+
   if ('serviceWorker' in navigator) {
-    // No service worker file shipped yet — placeholder for future offline support.
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW registration failed', err));
+    });
   }
 })();
 </script>
