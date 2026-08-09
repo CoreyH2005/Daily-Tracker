@@ -761,6 +761,11 @@
     }
     .daybar-tools .tool-btn { flex: 0 0 auto; }
   }
+
+  /* Embedded mode — hides the title/countdown banner when loaded
+     inside another app (e.g. SITREP) that already shows this info
+     in its own header. Triggered by ?embed=1 in the URL. */
+  body.embedded .sitrep { display: none; }
 </style>
 </head>
 <body>
@@ -813,6 +818,13 @@
 
 <script>
 (function() {
+  // Embedded mode: ?embed=1 hides this app's own title/countdown
+  // banner, since the parent (SITREP) shows that info in its own
+  // header when this is loaded inside an iframe.
+  if (new URLSearchParams(window.location.search).get('embed') === '1') {
+    document.body.classList.add('embedded');
+  }
+
   const CAT_COLORS = {
     Trading: '#33553b',
     Sandhurst: '#93712f',
