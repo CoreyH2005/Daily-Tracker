@@ -6,7 +6,7 @@
  * offline fallback, never as the preferred source.
  */
 
-const CACHE = 'daily-ops-v1';
+const CACHE = 'daily-ops-v2';
 const CORE = [
   './',
   './index.html',

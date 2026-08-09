@@ -716,6 +716,9 @@
     letter-spacing: 0.04em;
   }
 
+  .sync-status.ok { color: var(--green); }
+  .sync-status.warn { color: var(--brick); }
+
   /* ---- Mobile overrides ----
      These sit at the very end of the sheet on purpose: they need to beat the
      base .habit-row and .daybar-tools rules, which are declared further down
@@ -792,7 +795,7 @@
 
   <div id="ops-body" class="loading-note">Loading planner…</div>
 
-  <footer class="site-foot">DAILY OPS — LOCAL DATA STORED ON THIS DEVICE</footer>
+  <footer class="site-foot">DAILY OPS — <span class="sync-status" id="ops-sync-status">CONNECTING…</span></footer>
 </div>
 
 <div class="toast" id="ops-toast"></div>
@@ -897,12 +900,14 @@
   }
 
   function save(key, value) {
-    try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+    try { localStorage.setItem(key, JSON.stringify(value)); }
     catch(e) {
       console.error('save failed for ' + key, e);
       toast('Could not save — device storage may be full', true);
       return false;
     }
+    Sync.push(key, value);
+    return true;
   }
 
   function saveSchedule() { save(STORE_KEYS.schedule, state.scheduleAll); }
@@ -911,6 +916,175 @@
   function saveTemplate() { save(STORE_KEYS.template, state.template); }
   function saveTargets()  { save(STORE_KEYS.targets, state.targets); }
   function saveFitness()  { save(STORE_KEYS.fitness, state.fitness); }
+
+  /* ================================================================
+     Firebase Realtime Database sync (shared with SITREP)
+
+     Every local write is mirrored straight to the database with a PUT,
+     and a poll pulls the whole /sitrep blob back down every 15s so the
+     other device picks up changes. There is no SDK and no auth — the
+     REST endpoint is hit directly, which keeps this a single static
+     file with no build step.
+
+     REMOTE_KEYS maps this app's localStorage keys onto paths under
+     /sitrep. Point one of these at a name SITREP already writes and
+     the two apps share that value live — but only do that where the
+     stored SHAPE matches on both sides. Daily Ops habits are objects
+     ({id, name}); if SITREP stores plain strings, sharing the habits
+     key would corrupt both. Hence the ops_ prefix by default.
+     ================================================================ */
+  const SYNC_DB = 'https://sitrep-sync-default-rtdb.europe-west1.firebasedatabase.app';
+  const SYNC_ROOT = 'sitrep';
+  const SYNC_INTERVAL = 15000;
+
+  const REMOTE_KEYS = {
+    [STORE_KEYS.schedule]: 'ops_schedule',
+    [STORE_KEYS.habits]:   'ops_habits',
+    [STORE_KEYS.habitLog]: 'ops_habitlog',
+    [STORE_KEYS.template]: 'ops_template',
+    [STORE_KEYS.targets]:  'ops_targets',
+    [STORE_KEYS.fitness]:  'ops_fitness'
+  };
+  const LOCAL_KEYS = {};
+  Object.keys(REMOTE_KEYS).forEach(k => { LOCAL_KEYS[REMOTE_KEYS[k]] = k; });
+
+  const Sync = (function() {
+    let enabled = true;
+    let timer = null;
+    // A poll that overlaps one of our own writes would hand back the
+    // pre-write value and roll the edit back on screen. Keys stay
+    // quarantined from inbound merges while a PUT is in flight, plus a
+    // short grace period afterwards for the write to propagate.
+    const inflight = {};
+    const settledAt = {};
+    // On a device that has never run the app, loadAll() seeds the
+    // default habit list and saves it. Left alone that write would
+    // reach the database before the first pull and overwrite the real
+    // list from the other device. So pushes are held until the first
+    // pull lands, then only replayed for keys the database had nothing
+    // for.
+    let holding = false;
+    const held = {};
+
+    function url(remoteKey) {
+      return SYNC_DB + '/' + SYNC_ROOT + (remoteKey ? '/' + remoteKey : '') + '.json';
+    }
+
+    function setStatus(text, cls) {
+      const el = document.getElementById('ops-sync-status');
+      if (el) { el.textContent = text; el.className = 'sync-status ' + (cls || ''); }
+    }
+
+    function quarantined(remoteKey) {
+      return (inflight[remoteKey] || 0) > 0 || (Date.now() - (settledAt[remoteKey] || 0)) < 3000;
+    }
+
+    function push(localKey, value) {
+      const remoteKey = REMOTE_KEYS[localKey];
+      if (!enabled || !remoteKey) return;
+      if (holding) { held[localKey] = value; return; }
+
+      inflight[remoteKey] = (inflight[remoteKey] || 0) + 1;
+      fetch(url(remoteKey), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(value)
+      }).then(res => {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        setStatus('SYNCED', 'ok');
+      }).catch(err => {
+        console.warn('sync push failed for ' + remoteKey, err);
+        setStatus('OFFLINE — SAVED ON THIS DEVICE', 'warn');
+      }).then(() => {
+        inflight[remoteKey] = Math.max(0, (inflight[remoteKey] || 1) - 1);
+        settledAt[remoteKey] = Date.now();
+      });
+    }
+
+    // Applies anything the other device changed. Returns true if local
+    // state actually moved, so the caller only repaints when it must.
+    function applyRemote(blob) {
+      let changed = false;
+
+      Object.keys(blob || {}).forEach(remoteKey => {
+        const localKey = LOCAL_KEYS[remoteKey];
+        if (!localKey || quarantined(remoteKey)) return;
+
+        const incoming = blob[remoteKey];
+        if (incoming === null || incoming === undefined) return;
+
+        let current;
+        try { current = localStorage.getItem(localKey); } catch(e) { return; }
+        const next = JSON.stringify(incoming);
+        if (current === next) return;
+
+        // Written straight to localStorage rather than through save():
+        // save() would push it back out and the two devices would
+        // bounce the same value between them forever.
+        try { localStorage.setItem(localKey, next); } catch(e) { return; }
+        changed = true;
+      });
+
+      if (changed) loadAll();
+      return changed;
+    }
+
+    function hold() { holding = true; }
+
+    // Replays held writes, but only for keys the database had nothing
+    // for — anything it did have has already been merged in by
+    // applyRemote, and the held copy is the stale one.
+    function release(blob) {
+      if (!holding) return;
+      holding = false;
+      Object.keys(held).forEach(localKey => {
+        const remoteKey = REMOTE_KEYS[localKey];
+        const seen = blob && blob[remoteKey] !== undefined && blob[remoteKey] !== null;
+        if (!seen) push(localKey, held[localKey]);
+        delete held[localKey];
+      });
+    }
+
+    function pull() {
+      if (!enabled) return Promise.resolve(false);
+
+      // Re-rendering mid-edit throws away whatever is half-typed in the
+      // add-block or add-habit field. The next poll picks it up.
+      const focus = document.activeElement;
+      if (focus && /^(INPUT|SELECT|TEXTAREA)$/.test(focus.tagName)) return Promise.resolve(false);
+
+      return fetch(url(null) + '?t=' + Date.now(), { cache: 'no-store' })
+        .then(res => {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .then(blob => {
+          const changed = applyRemote(blob);
+          release(blob);
+          setStatus('SYNCED', 'ok');
+          if (changed) {
+            updateCountdowns();
+            renderDateBar();
+            renderBody();
+            toast('Updated from your other device');
+          }
+          return changed;
+        })
+        .catch(err => {
+          console.warn('sync pull failed', err);
+          setStatus('OFFLINE — SAVED ON THIS DEVICE', 'warn');
+          return false;
+        });
+    }
+
+    function start() {
+      if (timer) clearInterval(timer);
+      timer = setInterval(pull, SYNC_INTERVAL);
+      return pull();
+    }
+
+    return { push, pull, start, hold };
+  })();
 
   let toastTimer = null;
   function toast(msg, isWarn) {
@@ -1590,15 +1764,22 @@
   window.addEventListener('resize', syncStickyOffset);
   syncStickyOffset();
 
+  // Held before loadAll() so the defaults it seeds on a fresh device
+  // can't beat the first pull to the database. Sync.start() releases.
+  Sync.hold();
+
   loadAll();
   updateCountdowns();
   renderDateBar();
   renderBody();
+  Sync.start();
 
   // Re-check the date when the tab is refocused, so a planner left open
-  // overnight rolls over instead of showing yesterday as "today".
+  // overnight rolls over instead of showing yesterday as "today". Also a
+  // good moment to pull: the other device may have moved on while this
+  // tab sat in the background.
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) { updateCountdowns(); renderDateBar(); renderBody(); }
+    if (!document.hidden) { updateCountdowns(); renderDateBar(); renderBody(); Sync.pull(); }
   });
 
   if ('serviceWorker' in navigator) {
