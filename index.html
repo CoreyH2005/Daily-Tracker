@@ -677,6 +677,69 @@
     line-height: 1.5;
   }
 
+  /* ---- Daily Notes ---- */
+  .notes-section {
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 24px 26px 30px;
+    border-top: 1px solid var(--line);
+  }
+  @media (max-width: 780px) { .notes-section { padding: 22px 18px 26px; } }
+  .notes-form {
+    display: flex; gap: 7px;
+    margin-bottom: 14px;
+  }
+  .notes-form input[type=text] {
+    flex: 1;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 8px 10px;
+    background: white;
+  }
+  .notes-form button {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    background: var(--ink);
+    color: var(--paper);
+    border: none; border-radius: 3px;
+    padding: 7px 14px; cursor: pointer;
+  }
+  .notes-form button:hover { background: var(--green); }
+  .note-row {
+    display: flex;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--line);
+    align-items: baseline;
+  }
+  .note-row:last-child { border-bottom: none; }
+  .note-time {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    color: var(--ink-soft);
+    flex-shrink: 0;
+    width: 52px;
+  }
+  .note-text {
+    flex: 1;
+    font-size: 13.5px;
+    color: var(--ink);
+    line-height: 1.4;
+  }
+  .note-del {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    color: var(--ink-soft);
+    background: none; border: none;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .note-del:hover { color: var(--brick); }
+
   /* ---- Toast ---- */
   .toast {
     position: fixed;
@@ -842,7 +905,8 @@
     habitLog: 'ops:habitlog',
     template: 'ops:template',
     targets: 'ops:targets',
-    fitness: 'ops:fitness'
+    fitness: 'ops:fitness',
+    notes: 'ops:notes'
   };
 
   // Date-only ISO, matching what /sitrep/aosbDate and /sitrep/sandhurstDate
@@ -852,7 +916,6 @@
 
   // Lower is better for the run, higher is better for everything else.
   const METRICS = {
-    run:      { label: '2.4km Run',  unit: 'mm:ss', kind: 'time',  lowerBetter: true,  color: '#a53a28' },
     pressups: { label: 'Press-ups',  unit: 'reps',  kind: 'count', lowerBetter: false, color: '#33553b' },
     situps:   { label: 'Sit-ups',    unit: 'reps',  kind: 'count', lowerBetter: false, color: '#93712f' },
     msft:     { label: 'Bleep Test', unit: 'level', kind: 'level', lowerBetter: false, color: '#4a5d7a' }
@@ -861,7 +924,8 @@
   let state = {
     scheduleAll: {}, habits: [], habitLog: {},
     template: [], targets: Object.assign({}, DEFAULT_TARGETS),
-    fitness: { entries: [], targets: {} }
+    fitness: { entries: [], targets: {} },
+    notesAll: {}
   };
   let currentDate = new Date();
 
@@ -925,6 +989,11 @@
         targets: (parsed && parsed.targets) ? parsed.targets : {}
       };
     } catch(e) { state.fitness = { entries: [], targets: {} }; }
+
+    try {
+      const n = localStorage.getItem(STORE_KEYS.notes);
+      state.notesAll = n ? JSON.parse(n) : {};
+    } catch(e) { state.notesAll = {}; }
   }
 
   function save(key, value) {
@@ -943,6 +1012,7 @@
   function saveHabitLog() { save(STORE_KEYS.habitLog, state.habitLog); }
   function saveTemplate() { save(STORE_KEYS.template, state.template); }
   function saveTargets()  { save(STORE_KEYS.targets, state.targets); }
+  function saveNotes()    { save(STORE_KEYS.notes, state.notesAll); }
   function saveFitness()  { save(STORE_KEYS.fitness, state.fitness); }
 
   /* ================================================================
@@ -1445,6 +1515,7 @@
 
     renderCharts(dateKey);
     renderFitness();
+    renderNotes(dateKey);
     attachHandlers(dateKey, isFuture);
   }
 
@@ -1708,7 +1779,7 @@
         <button id="ops-fit-target" class="tool-btn">Set target</button>
       </div>
       <div class="fit-hint">
-        Run as <b>mm:ss</b> (e.g. 9:30) · press-ups and sit-ups as reps · bleep test as level (e.g. 10.5).
+        Press-ups and sit-ups as reps · bleep test as level (e.g. 10.5).
         Targets are yours to set — nothing here is an official standard, so check the current
         requirements and enter them yourself.
       </div>
@@ -1723,6 +1794,68 @@
     }
     sec.innerHTML = html;
     attachFitnessHandlers();
+  }
+
+  function renderNotes(dateKey) {
+    const notes = (state.notesAll[dateKey] || []).slice().sort((a, b) => a.time.localeCompare(b.time));
+
+    const html = `
+      <div class="col-head">
+        <h3>Daily Notes</h3>
+        <span class="tally">${notes.length} ${notes.length === 1 ? 'entry' : 'entries'}</span>
+      </div>
+      <div class="notes-form">
+        <input type="text" id="ops-new-note" placeholder="Add a note, thought, or reminder..." maxlength="500">
+        <button id="ops-add-note">Add</button>
+      </div>
+      <div id="ops-notes-list">
+        ${notes.length === 0
+          ? '<div class="empty-note">No notes today — add one above.</div>'
+          : notes.map(n => `
+            <div class="note-row" data-id="${n.id}">
+              <span class="note-time mono">${n.time}</span>
+              <span class="note-text">${escapeHtml(n.text)}</span>
+              <button class="note-del" data-action="del-note" data-id="${n.id}">×</button>
+            </div>
+          `).join('')}
+      </div>
+    `;
+
+    let sec = document.querySelector('.notes-section');
+    if (!sec) {
+      sec = document.createElement('div');
+      sec.className = 'notes-section';
+      const strip = document.querySelector('.priority-strip');
+      strip.parentNode.insertBefore(sec, strip);
+    }
+    sec.innerHTML = html;
+    attachNotesHandlers(dateKey);
+  }
+
+  function attachNotesHandlers(dateKey) {
+    const input = document.getElementById('ops-new-note');
+    const addNote = () => {
+      const text = input.value.trim();
+      if (!text) return;
+      if (!state.notesAll[dateKey]) state.notesAll[dateKey] = [];
+      const now = new Date();
+      const time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+      state.notesAll[dateKey].push({ id: uid(), time, text });
+      saveNotes();
+      input.value = '';
+      renderNotes(dateKey);
+    };
+    document.getElementById('ops-add-note').onclick = addNote;
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') addNote(); });
+
+    document.querySelectorAll('[data-action="del-note"]').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.dataset.id;
+        state.notesAll[dateKey] = (state.notesAll[dateKey] || []).filter(n => n.id !== id);
+        saveNotes();
+        renderNotes(dateKey);
+      };
+    });
   }
 
   function attachFitnessHandlers() {
@@ -1888,7 +2021,8 @@
       habitLog: state.habitLog,
       template: state.template,
       targets: state.targets,
-      fitness: state.fitness
+      fitness: state.fitness,
+      notes: state.notesAll
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
