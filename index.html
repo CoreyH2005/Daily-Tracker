@@ -831,7 +831,10 @@
     fitness: 'ops:fitness'
   };
 
-  const DEFAULT_TARGETS = { aosb: '2026-10-12', sandhurst: '2027-09-01' };
+  // Date-only ISO, matching what /sitrep/aosbDate and /sitrep/sandhurstDate
+  // hold. Sandhurst was 2027-09-01 here and 2027-09-07 in SITREP; the
+  // September 7th intake is the correct one.
+  const DEFAULT_TARGETS = { aosb: '2026-10-12', sandhurst: '2027-09-07' };
 
   // Lower is better for the run, higher is better for everything else.
   const METRICS = {
@@ -944,12 +947,18 @@
      put the phone and the PC in separate trees and defeat the sync.
      Read the device id off the footer to add a new device.
 
-     REMOTE_KEYS maps this app's localStorage keys onto paths under
-     /sitrep. Point one of these at a name SITREP already writes and
-     the two apps share that value live — but only do that where the
-     stored SHAPE matches on both sides. Daily Ops habits are objects
-     ({id, name}); if SITREP stores plain strings, sharing the habits
-     key would corrupt both. Hence the ops_ prefix by default.
+     REMOTE_KEYS holds what is private to this app, under an ops_
+     prefix. Everything there stays this app's own: SITREP models the
+     same ideas differently — its habit tracker is a fixed five-item
+     list where this one is freely named and id'd — and merging those
+     would corrupt one side or both.
+
+     SHARED_FIELDS holds the exception. The AOSB and Sandhurst dates
+     are the same real-world fact in both apps, so they sit at the top
+     level of /sitrep under names neither app owns, and both read and
+     write them. They are stored as bare date-only ISO strings because
+     that is the fact; SITREP's 08:00 on its milestones is presentation
+     and belongs to SITREP, so each side adapts on the way in and out.
      ================================================================ */
   const SYNC_DB = 'https://sitrep-sync-default-rtdb.europe-west1.firebasedatabase.app';
   const SYNC_ROOT = 'sitrep';
@@ -960,11 +969,21 @@
     [STORE_KEYS.habits]:   'ops_habits',
     [STORE_KEYS.habitLog]: 'ops_habitlog',
     [STORE_KEYS.template]: 'ops_template',
-    [STORE_KEYS.targets]:  'ops_targets',
     [STORE_KEYS.fitness]:  'ops_fitness'
   };
   const LOCAL_KEYS = {};
   Object.keys(REMOTE_KEYS).forEach(k => { LOCAL_KEYS[REMOTE_KEYS[k]] = k; });
+
+  // Individual fields lifted out of a local blob and shared with SITREP
+  // as top-level keys. localStorage key -> { field: remote key }.
+  const SHARED_FIELDS = {
+    [STORE_KEYS.targets]: { aosb: 'aosbDate', sandhurst: 'sandhurstDate' }
+  };
+  const SHARED_LOOKUP = {};
+  Object.keys(SHARED_FIELDS).forEach(localKey => {
+    const fields = SHARED_FIELDS[localKey];
+    Object.keys(fields).forEach(field => { SHARED_LOOKUP[fields[field]] = { localKey, field }; });
+  });
 
   // Deliberately not in REMOTE_KEYS: the credential is this device's, and
   // syncing it would hand every device the same identity.
@@ -1110,16 +1129,25 @@
       return (inflight[remoteKey] || 0) > 0 || (Date.now() - (settledAt[remoteKey] || 0)) < 3000;
     }
 
-    function push(localKey, value) {
+    // One local key can fan out to several remote ones: the targets blob
+    // is split into the two dates shared with SITREP.
+    function outgoing(localKey, value) {
+      const fields = SHARED_FIELDS[localKey];
+      if (fields) {
+        return Object.keys(fields)
+          .map(field => [fields[field], value ? value[field] : null])
+          .filter(pair => pair[1] !== null && pair[1] !== undefined);
+      }
       const remoteKey = REMOTE_KEYS[localKey];
-      if (!enabled || !remoteKey) return;
-      if (holding) { held[localKey] = value; return; }
+      return remoteKey ? [[remoteKey, value]] : [];
+    }
 
+    function send(remoteKey, payload) {
       inflight[remoteKey] = (inflight[remoteKey] || 0) + 1;
       Auth.token().then(tok => fetch(withAuth(url(remoteKey), tok), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(value)
+        body: JSON.stringify(payload)
       })).then(res => {
         if (!res.ok) throw httpError(res);
         setStatus('SYNCED', 'ok');
@@ -1131,6 +1159,14 @@
         inflight[remoteKey] = Math.max(0, (inflight[remoteKey] || 1) - 1);
         settledAt[remoteKey] = Date.now();
       });
+    }
+
+    function push(localKey, value) {
+      if (!enabled) return;
+      const pairs = outgoing(localKey, value);
+      if (!pairs.length) return;
+      if (holding) { held[localKey] = value; return; }
+      pairs.forEach(pair => send(pair[0], pair[1]));
     }
 
     // Applies anything the other device changed. Returns true if local
@@ -1157,6 +1193,37 @@
         changed = true;
       });
 
+      // The shared dates arrive as separate top-level keys and have to be
+      // folded back into this app's targets blob. Merged field by field
+      // rather than replacing the blob, so a date SITREP has never
+      // written doesn't wipe the one held here.
+      Object.keys(SHARED_FIELDS).forEach(localKey => {
+        const fields = SHARED_FIELDS[localKey];
+
+        let parsed = {};
+        try {
+          const current = localStorage.getItem(localKey);
+          if (current) parsed = JSON.parse(current) || {};
+        } catch(e) { parsed = {}; }
+
+        const merged = Object.assign({}, parsed);
+        let touched = false;
+
+        Object.keys(fields).forEach(field => {
+          const remoteKey = fields[field];
+          if (quarantined(remoteKey)) return;
+          const incoming = (blob || {})[remoteKey];
+          if (incoming === null || incoming === undefined) return;
+          if (merged[field] === incoming) return;
+          merged[field] = incoming;
+          touched = true;
+        });
+
+        if (!touched) return;
+        try { localStorage.setItem(localKey, JSON.stringify(merged)); } catch(e) { return; }
+        changed = true;
+      });
+
       if (changed) loadAll();
       return changed;
     }
@@ -1170,11 +1237,34 @@
       if (!holding) return;
       holding = false;
       Object.keys(held).forEach(localKey => {
-        const remoteKey = REMOTE_KEYS[localKey];
-        const seen = blob && blob[remoteKey] !== undefined && blob[remoteKey] !== null;
-        if (!seen) push(localKey, held[localKey]);
+        outgoing(localKey, held[localKey]).forEach(pair => {
+          const seen = blob && blob[pair[0]] !== undefined && blob[pair[0]] !== null;
+          if (!seen) send(pair[0], pair[1]);
+        });
         delete held[localKey];
       });
+
+      // Nothing calls saveTargets() on a first run, so unlike the other
+      // keys the shared dates are never queued for pushing and would sit
+      // out of the database until the user happened to edit one. Seed
+      // whatever it is missing from what this device is already showing.
+      Object.keys(SHARED_FIELDS).forEach(localKey => {
+        const source = currentShared(localKey);
+        if (!source) return;
+        const fields = SHARED_FIELDS[localKey];
+        Object.keys(fields).forEach(field => {
+          const remoteKey = fields[field];
+          const seen = blob && blob[remoteKey] !== undefined && blob[remoteKey] !== null;
+          if (seen || !source[field]) return;
+          send(remoteKey, source[field]);
+        });
+      });
+    }
+
+    // The in-memory blob a shared field is read back out of. Targets is
+    // the only shared blob today; extend here alongside SHARED_FIELDS.
+    function currentShared(localKey) {
+      return localKey === STORE_KEYS.targets ? state.targets : null;
     }
 
     function pull() {

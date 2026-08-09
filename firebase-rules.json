@@ -1,0 +1,11 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "sitrep": {
+      ".read": "auth != null && (auth.uid === 'REPLACE_WITH_PC_UID' || auth.uid === 'REPLACE_WITH_PHONE_UID')",
+      ".write": "auth != null && (auth.uid === 'REPLACE_WITH_PC_UID' || auth.uid === 'REPLACE_WITH_PHONE_UID')"
+    }
+  }
+}
