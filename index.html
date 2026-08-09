@@ -719,6 +719,17 @@
   .sync-status.ok { color: var(--green); }
   .sync-status.warn { color: var(--brick); }
 
+  /* Selectable on purpose: this id has to be copied into the database
+     rules by hand whenever a new device is added. */
+  .device-id {
+    display: block;
+    margin-top: 4px;
+    font-size: 9px;
+    opacity: 0.6;
+    user-select: all;
+    -webkit-user-select: all;
+  }
+
   /* ---- Mobile overrides ----
      These sit at the very end of the sheet on purpose: they need to beat the
      base .habit-row and .daybar-tools rules, which are declared further down
@@ -795,7 +806,7 @@
 
   <div id="ops-body" class="loading-note">Loading planner…</div>
 
-  <footer class="site-foot">DAILY OPS — <span class="sync-status" id="ops-sync-status">CONNECTING…</span></footer>
+  <footer class="site-foot">DAILY OPS — <span class="sync-status" id="ops-sync-status">CONNECTING…</span><span class="device-id" id="ops-device-id"></span></footer>
 </div>
 
 <div class="toast" id="ops-toast"></div>
@@ -922,9 +933,16 @@
 
      Every local write is mirrored straight to the database with a PUT,
      and a poll pulls the whole /sitrep blob back down every 15s so the
-     other device picks up changes. There is no SDK and no auth — the
-     REST endpoint is hit directly, which keeps this a single static
-     file with no build step.
+     other device picks up changes. There is no SDK — the REST endpoint
+     is hit directly, which keeps this a single static file with no
+     build step.
+
+     Requests carry an anonymous-auth ID token so the database rules can
+     stop being world-writable. Anonymous sign-in mints a NEW uid per
+     device, so the rules allowlist each device's uid explicitly rather
+     than scoping to the caller's own subtree — scoping per-uid would
+     put the phone and the PC in separate trees and defeat the sync.
+     Read the device id off the footer to add a new device.
 
      REMOTE_KEYS maps this app's localStorage keys onto paths under
      /sitrep. Point one of these at a name SITREP already writes and
@@ -947,6 +965,119 @@
   };
   const LOCAL_KEYS = {};
   Object.keys(REMOTE_KEYS).forEach(k => { LOCAL_KEYS[REMOTE_KEYS[k]] = k; });
+
+  // Deliberately not in REMOTE_KEYS: the credential is this device's, and
+  // syncing it would hand every device the same identity.
+  const AUTH_KEYS = { refresh: 'ops:authrefresh', uid: 'ops:authuid' };
+  const SYNC_API_KEY = 'AIzaSyA9mmyaqyKBSItLMaRWy1Hs6koyZPsWlnY';
+
+  const Auth = (function() {
+    let idToken = null;
+    let expiresAt = 0;
+    let uid = null;
+    let pending = null;
+    // Set only when the provider is switched off in the Firebase console.
+    // A network failure must NOT land here, or going offline for a moment
+    // would leave the tab unauthenticated until it is reloaded.
+    let disabled = false;
+
+    try { uid = localStorage.getItem(AUTH_KEYS.uid); } catch(e) {}
+
+    function post(endpoint, body) {
+      return fetch(endpoint + '?key=' + SYNC_API_KEY, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      }).then(res => res.json().then(json => {
+        if (!res.ok) {
+          const reason = (json && json.error && json.error.message) || ('HTTP ' + res.status);
+          const err = new Error(reason);
+          // Anonymous sign-in not turned on, or Authentication never
+          // enabled on the project at all (CONFIGURATION_NOT_FOUND).
+          // Retrying these is pointless — it is a console setting, so
+          // give up for the session rather than paying a failed request
+          // on every push and every poll.
+          err.fatal = /OPERATION_NOT_ALLOWED|ADMIN_ONLY_OPERATION|CONFIGURATION_NOT_FOUND/.test(reason);
+          throw err;
+        }
+        return json;
+      }));
+    }
+
+    function store(res) {
+      idToken = res.idToken || res.id_token;
+      uid = res.localId || res.user_id || uid;
+      const ttl = Number(res.expiresIn || res.expires_in || 3600);
+      // Renewed a minute early so a token cannot expire mid-request.
+      expiresAt = Date.now() + (ttl - 60) * 1000;
+      try {
+        const rt = res.refreshToken || res.refresh_token;
+        if (rt) localStorage.setItem(AUTH_KEYS.refresh, rt);
+        if (uid) localStorage.setItem(AUTH_KEYS.uid, uid);
+      } catch(e) {}
+      showDeviceId();
+      return idToken;
+    }
+
+    function signUp() {
+      return post('https://identitytoolkit.googleapis.com/v1/accounts:signUp', { returnSecureToken: true });
+    }
+
+    function refresh(rt) {
+      return post('https://securetoken.googleapis.com/v1/token', { grant_type: 'refresh_token', refresh_token: rt });
+    }
+
+    // Resolves to an ID token, or to null when auth is unavailable. Null is
+    // not treated as an error: while the rules are still open the app has
+    // to keep working unauthenticated, which is what makes it safe to ship
+    // this before the rules are published.
+    function token() {
+      if (disabled) return Promise.resolve(null);
+      if (idToken && Date.now() < expiresAt) return Promise.resolve(idToken);
+      if (pending) return pending;
+
+      let rt = null;
+      try { rt = localStorage.getItem(AUTH_KEYS.refresh); } catch(e) {}
+
+      // A stored refresh token can be revoked or simply stale, in which
+      // case signing up again gets this device a fresh identity.
+      pending = (rt ? refresh(rt).catch(() => signUp()) : signUp())
+        .then(store)
+        .catch(err => {
+          if (err && err.fatal) {
+            disabled = true;
+            console.warn('anonymous auth is not enabled for this project — continuing unauthenticated', err);
+          } else {
+            console.warn('auth failed, will retry', err);
+          }
+          return null;
+        })
+        .then(t => { pending = null; return t; });
+
+      return pending;
+    }
+
+    function showDeviceId() {
+      const el = document.getElementById('ops-device-id');
+      if (el && uid) el.textContent = 'DEVICE ' + uid;
+    }
+
+    return { token, showDeviceId, uid: () => uid };
+  })();
+
+  // A rules rejection and a dead connection both surface as a failed
+  // fetch, but they need different wording: one is fixed in the Firebase
+  // console, the other fixes itself.
+  function httpError(res) {
+    const err = new Error('HTTP ' + res.status);
+    err.denied = (res.status === 401 || res.status === 403);
+    return err;
+  }
+
+  function withAuth(url, token) {
+    if (!token) return url;
+    return url + (url.indexOf('?') === -1 ? '?' : '&') + 'auth=' + encodeURIComponent(token);
+  }
 
   const Sync = (function() {
     let enabled = true;
@@ -985,16 +1116,17 @@
       if (holding) { held[localKey] = value; return; }
 
       inflight[remoteKey] = (inflight[remoteKey] || 0) + 1;
-      fetch(url(remoteKey), {
+      Auth.token().then(tok => fetch(withAuth(url(remoteKey), tok), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(value)
-      }).then(res => {
-        if (!res.ok) throw new Error('HTTP ' + res.status);
+      })).then(res => {
+        if (!res.ok) throw httpError(res);
         setStatus('SYNCED', 'ok');
       }).catch(err => {
         console.warn('sync push failed for ' + remoteKey, err);
-        setStatus('OFFLINE — SAVED ON THIS DEVICE', 'warn');
+        setStatus(err && err.denied ? 'NOT AUTHORISED — SAVED ON THIS DEVICE'
+                                    : 'OFFLINE — SAVED ON THIS DEVICE', 'warn');
       }).then(() => {
         inflight[remoteKey] = Math.max(0, (inflight[remoteKey] || 1) - 1);
         settledAt[remoteKey] = Date.now();
@@ -1053,9 +1185,10 @@
       const focus = document.activeElement;
       if (focus && /^(INPUT|SELECT|TEXTAREA)$/.test(focus.tagName)) return Promise.resolve(false);
 
-      return fetch(url(null) + '?t=' + Date.now(), { cache: 'no-store' })
+      return Auth.token()
+        .then(tok => fetch(withAuth(url(null) + '?t=' + Date.now(), tok), { cache: 'no-store' }))
         .then(res => {
-          if (!res.ok) throw new Error('HTTP ' + res.status);
+          if (!res.ok) throw httpError(res);
           return res.json();
         })
         .then(blob => {
@@ -1072,7 +1205,8 @@
         })
         .catch(err => {
           console.warn('sync pull failed', err);
-          setStatus('OFFLINE — SAVED ON THIS DEVICE', 'warn');
+          setStatus(err && err.denied ? 'NOT AUTHORISED — SAVED ON THIS DEVICE'
+                                      : 'OFFLINE — SAVED ON THIS DEVICE', 'warn');
           return false;
         });
     }
@@ -1772,6 +1906,7 @@
   updateCountdowns();
   renderDateBar();
   renderBody();
+  Auth.showDeviceId();
   Sync.start();
 
   // Re-check the date when the tab is refocused, so a planner left open
