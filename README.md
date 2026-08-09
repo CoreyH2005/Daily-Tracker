@@ -47,10 +47,23 @@ models the same ideas differently and merging them would corrupt one side or bot
 
 - Your planner data leaves the device. It is held in a Firebase database, not just in the
   browser.
-- Access is by anonymous auth plus a uid allowlist in `firebase-rules.json`. **Anonymous
-  sign-in mints a new uid per device, not per person** — so each device has to be added to
-  the allowlist by hand, and clearing browser storage gives that device a new uid that
-  needs re-adding. Read the current one off the footer.
+- Access is by anonymous auth plus a uid allowlist. **Anonymous sign-in mints a new uid per
+  device, not per person** — and per browser profile, so SITREP's two kiosk windows count
+  as two devices. Clearing a browser's storage gives that device a new uid.
+
+### Adding a device to the allowlist
+
+The rules in `firebase-rules.json` are generic — they check an allowlist held in the
+database, so adding a device does not mean editing or republishing rules, and no uid is
+ever committed to this repo.
+
+1. Open the app on the new device and read the uid from the footer (SITREP shows its own
+   in the top-right "DEVICE" readout).
+2. Firebase Console → Realtime Database → **Data** tab → `allowedUids` → add a child named
+   with that uid, value boolean `true`.
+
+That is the whole procedure. `allowedUids` is unreadable and unwritable by any client; only
+the rules engine can see it.
 - Clearing site data still wipes local history, but anything already synced comes back on
   the next poll.
 

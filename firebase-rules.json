@@ -4,8 +4,13 @@
     ".write": false,
 
     "sitrep": {
-      ".read": "auth != null && (auth.uid === 'REPLACE_WITH_PC_UID' || auth.uid === 'REPLACE_WITH_PHONE_UID')",
-      ".write": "auth != null && (auth.uid === 'REPLACE_WITH_PC_UID' || auth.uid === 'REPLACE_WITH_PHONE_UID')"
+      ".read": "auth != null && root.child('allowedUids').child(auth.uid).val() === true",
+      ".write": "auth != null && root.child('allowedUids').child(auth.uid).val() === true"
+    },
+
+    "allowedUids": {
+      ".read": false,
+      ".write": false
     }
   }
 }
