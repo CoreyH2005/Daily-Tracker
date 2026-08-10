@@ -583,100 +583,6 @@
   }
   .cd-btn:hover .countdown-num { text-decoration: underline dotted; }
 
-  /* ---- Fitness ---- */
-  .fitness-section {
-    max-width: 1100px;
-    width: 100%;
-    margin: 0 auto;
-    padding: 24px 26px 30px;
-    border-top: 1px solid var(--line);
-  }
-  @media (max-width: 780px) { .fitness-section { padding: 22px 18px 26px; } }
-  .fit-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin-bottom: 4px;
-  }
-  @media (max-width: 780px) { .fit-grid { grid-template-columns: repeat(2, 1fr); } }
-  .fit-card {
-    background: rgba(255,255,255,0.4);
-    border: 1px solid var(--line);
-    border-top: 3px solid var(--metric-color, var(--green));
-    border-radius: 4px;
-    padding: 12px 13px 13px;
-  }
-  .fit-name {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9.5px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
-  }
-  .fit-val {
-    font-family: 'Fraunces', serif;
-    font-size: 25px;
-    font-weight: 700;
-    color: var(--ink);
-    line-height: 1.1;
-    margin-top: 5px;
-  }
-  .fit-val.none { color: var(--ink-soft); font-size: 18px; }
-  .fit-meta {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    color: var(--ink-soft);
-    margin-top: 3px;
-  }
-  .fit-bar {
-    height: 5px;
-    background: rgba(28,26,20,0.08);
-    border-radius: 3px;
-    margin-top: 9px;
-    overflow: hidden;
-  }
-  .fit-bar span {
-    display: block;
-    height: 100%;
-    background: var(--metric-color, var(--green));
-    transition: width 0.45s ease;
-  }
-  .fit-delta { font-weight: 600; }
-  .fit-delta.good { color: var(--green); }
-  .fit-delta.bad { color: var(--brick); }
-
-  .fit-form {
-    display: flex; gap: 7px; flex-wrap: wrap;
-    margin-top: 16px; padding-top: 13px;
-    border-top: 1px dashed var(--line);
-  }
-  .fit-form select, .fit-form input {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12.5px;
-    border: 1px solid var(--line);
-    border-radius: 3px;
-    padding: 7px 8px;
-    background: white;
-  }
-  .fit-form input[type=text] { width: 110px; }
-  .fit-form button {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    text-transform: uppercase;
-    background: var(--ink);
-    color: var(--paper);
-    border: none; border-radius: 3px;
-    padding: 7px 14px; cursor: pointer;
-  }
-  .fit-form button:hover { background: var(--green); }
-  .fit-hint {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10.5px;
-    color: var(--ink-soft);
-    margin-top: 9px;
-    line-height: 1.5;
-  }
-
   /* ---- Daily Notes ---- */
   .notes-section {
     max-width: 1100px;
@@ -905,7 +811,6 @@
     habitLog: 'ops:habitlog',
     template: 'ops:template',
     targets: 'ops:targets',
-    fitness: 'ops:fitness',
     notes: 'ops:notes'
   };
 
@@ -914,17 +819,9 @@
   // September 7th intake is the correct one.
   const DEFAULT_TARGETS = { aosb: '2026-10-12', sandhurst: '2027-09-07' };
 
-  // Lower is better for the run, higher is better for everything else.
-  const METRICS = {
-    pressups: { label: 'Press-ups',  unit: 'reps',  kind: 'count', lowerBetter: false, color: '#33553b' },
-    situps:   { label: 'Sit-ups',    unit: 'reps',  kind: 'count', lowerBetter: false, color: '#93712f' },
-    msft:     { label: 'Bleep Test', unit: 'level', kind: 'level', lowerBetter: false, color: '#4a5d7a' }
-  };
-
   let state = {
     scheduleAll: {}, habits: [], habitLog: {},
     template: [], targets: Object.assign({}, DEFAULT_TARGETS),
-    fitness: { entries: [], targets: {} },
     notesAll: {}
   };
   let currentDate = new Date();
@@ -982,15 +879,6 @@
     } catch(e) { state.targets = Object.assign({}, DEFAULT_TARGETS); }
 
     try {
-      const f = localStorage.getItem(STORE_KEYS.fitness);
-      const parsed = f ? JSON.parse(f) : null;
-      state.fitness = {
-        entries: (parsed && Array.isArray(parsed.entries)) ? parsed.entries : [],
-        targets: (parsed && parsed.targets) ? parsed.targets : {}
-      };
-    } catch(e) { state.fitness = { entries: [], targets: {} }; }
-
-    try {
       const n = localStorage.getItem(STORE_KEYS.notes);
       state.notesAll = n ? JSON.parse(n) : {};
     } catch(e) { state.notesAll = {}; }
@@ -1013,7 +901,6 @@
   function saveTemplate() { save(STORE_KEYS.template, state.template); }
   function saveTargets()  { save(STORE_KEYS.targets, state.targets); }
   function saveNotes()    { save(STORE_KEYS.notes, state.notesAll); }
-  function saveFitness()  { save(STORE_KEYS.fitness, state.fitness); }
 
   /* ================================================================
      Firebase Realtime Database sync (shared with SITREP)
@@ -1052,8 +939,7 @@
     [STORE_KEYS.schedule]: 'ops_schedule',
     [STORE_KEYS.habits]:   'ops_habits',
     [STORE_KEYS.habitLog]: 'ops_habitlog',
-    [STORE_KEYS.template]: 'ops_template',
-    [STORE_KEYS.fitness]:  'ops_fitness'
+    [STORE_KEYS.template]: 'ops_template'
   };
   const LOCAL_KEYS = {};
   Object.keys(REMOTE_KEYS).forEach(k => { LOCAL_KEYS[REMOTE_KEYS[k]] = k; });
@@ -1514,7 +1400,6 @@
       .map((p,i) => `<span class="p-item"><b>${i+1}</b> ${p}</span>`).join('');
 
     renderCharts(dateKey);
-    renderFitness();
     renderNotes(dateKey);
     attachHandlers(dateKey, isFuture);
   }
@@ -1680,230 +1565,6 @@
     `;
   }
 
-  // --- Fitness -------------------------------------------------------------
-  // Values are stored as numbers: run in seconds, everything else as-is.
-  function parseMetricValue(metricKey, raw) {
-    const s = String(raw || '').trim();
-    if (!s) return null;
-    const m = METRICS[metricKey];
-    if (!m) return null;
-    if (m.kind === 'time') {
-      const parts = s.split(':');
-      if (parts.length === 2) {
-        const mins = Number(parts[0]), secs = Number(parts[1]);
-        if (!isFinite(mins) || !isFinite(secs) || secs >= 60 || mins < 0 || secs < 0) return null;
-        return mins * 60 + secs;
-      }
-      const n = Number(s);
-      return isFinite(n) && n > 0 ? n : null;
-    }
-    const n = Number(s);
-    return isFinite(n) && n >= 0 ? n : null;
-  }
-
-  function fmtMetricValue(metricKey, val) {
-    if (val === null || val === undefined) return '—';
-    const m = METRICS[metricKey];
-    if (m && m.kind === 'time') {
-      const mins = Math.floor(val / 60), secs = Math.round(val % 60);
-      return mins + ':' + String(secs).padStart(2, '0');
-    }
-    return String(Math.round(val * 10) / 10);
-  }
-
-  function latestEntry(metricKey) {
-    const list = state.fitness.entries
-      .filter(e => e.metric === metricKey)
-      .sort((a, b) => a.date.localeCompare(b.date));
-    return list.length ? list[list.length - 1] : null;
-  }
-
-  function bestEntry(metricKey) {
-    const m = METRICS[metricKey];
-    const list = state.fitness.entries.filter(e => e.metric === metricKey);
-    if (!list.length) return null;
-    return list.reduce((best, e) =>
-      (m.lowerBetter ? e.value < best.value : e.value > best.value) ? e : best, list[0]);
-  }
-
-  function renderFitness() {
-    const cards = Object.keys(METRICS).map(key => {
-      const m = METRICS[key];
-      const latest = latestEntry(key);
-      const best = bestEntry(key);
-      const targetRaw = state.fitness.targets[key];
-      const target = (targetRaw === null || targetRaw === undefined) ? null : Number(targetRaw);
-
-      let pct = 0, deltaHtml = '';
-      if (latest && target !== null && isFinite(target) && target > 0) {
-        pct = m.lowerBetter
-          ? Math.min(100, (target / latest.value) * 100)
-          : Math.min(100, (latest.value / target) * 100);
-        const hit = m.lowerBetter ? latest.value <= target : latest.value >= target;
-        if (hit) {
-          deltaHtml = '<span class="fit-delta good">target met</span>';
-        } else {
-          const gap = m.lowerBetter ? latest.value - target : target - latest.value;
-          deltaHtml = '<span class="fit-delta bad">' + fmtMetricValue(key, gap) + ' to go</span>';
-        }
-      }
-
-      return `
-        <div class="fit-card" style="--metric-color:${m.color}">
-          <div class="fit-name">${m.label}</div>
-          <div class="fit-val ${latest ? '' : 'none'}">${latest ? fmtMetricValue(key, latest.value) : 'no data'}</div>
-          <div class="fit-meta">
-            ${target !== null && isFinite(target)
-              ? 'Target ' + fmtMetricValue(key, target) + (deltaHtml ? ' · ' + deltaHtml : '')
-              : '<button class="tool-btn" style="padding:2px 7px;font-size:9.5px" data-action="set-target" data-metric="' + key + '">Set target</button>'}
-          </div>
-          <div class="fit-bar"><span style="width:${pct.toFixed(1)}%"></span></div>
-          <div class="fit-meta">${best ? 'Best ' + fmtMetricValue(key, best.value) + ' · ' + state.fitness.entries.filter(e=>e.metric===key).length + ' logged' : 'No entries yet'}</div>
-        </div>
-      `;
-    }).join('');
-
-    const html = `
-      <div class="col-head">
-        <h3>Fitness</h3>
-        <span class="tally">${state.fitness.entries.length} entries</span>
-      </div>
-      <div class="fit-grid">${cards}</div>
-      <div class="fit-form">
-        <select id="ops-fit-metric">
-          ${Object.keys(METRICS).map(k => `<option value="${k}">${METRICS[k].label}</option>`).join('')}
-        </select>
-        <input type="text" id="ops-fit-value" placeholder="e.g. 9:30">
-        <input type="date" id="ops-fit-date" value="${fmtDate(new Date())}">
-        <button id="ops-fit-add">Log</button>
-        <button id="ops-fit-target" class="tool-btn">Set target</button>
-      </div>
-      <div class="fit-hint">
-        Press-ups and sit-ups as reps · bleep test as level (e.g. 10.5).
-        Targets are yours to set — nothing here is an official standard, so check the current
-        requirements and enter them yourself.
-      </div>
-    `;
-
-    let sec = document.querySelector('.fitness-section');
-    if (!sec) {
-      sec = document.createElement('div');
-      sec.className = 'fitness-section';
-      const strip = document.querySelector('.priority-strip');
-      strip.parentNode.insertBefore(sec, strip);
-    }
-    sec.innerHTML = html;
-    attachFitnessHandlers();
-  }
-
-  function renderNotes(dateKey) {
-    const notes = (state.notesAll[dateKey] || []).slice().sort((a, b) => a.time.localeCompare(b.time));
-
-    const html = `
-      <div class="col-head">
-        <h3>Daily Notes</h3>
-        <span class="tally">${notes.length} ${notes.length === 1 ? 'entry' : 'entries'}</span>
-      </div>
-      <div class="notes-form">
-        <input type="text" id="ops-new-note" placeholder="Add a note, thought, or reminder..." maxlength="500">
-        <button id="ops-add-note">Add</button>
-      </div>
-      <div id="ops-notes-list">
-        ${notes.length === 0
-          ? '<div class="empty-note">No notes today — add one above.</div>'
-          : notes.map(n => `
-            <div class="note-row" data-id="${n.id}">
-              <span class="note-time mono">${n.time}</span>
-              <span class="note-text">${escapeHtml(n.text)}</span>
-              <button class="note-del" data-action="del-note" data-id="${n.id}">×</button>
-            </div>
-          `).join('')}
-      </div>
-    `;
-
-    let sec = document.querySelector('.notes-section');
-    if (!sec) {
-      sec = document.createElement('div');
-      sec.className = 'notes-section';
-      const strip = document.querySelector('.priority-strip');
-      strip.parentNode.insertBefore(sec, strip);
-    }
-    sec.innerHTML = html;
-    attachNotesHandlers(dateKey);
-  }
-
-  function attachNotesHandlers(dateKey) {
-    const input = document.getElementById('ops-new-note');
-    const addNote = () => {
-      const text = input.value.trim();
-      if (!text) return;
-      if (!state.notesAll[dateKey]) state.notesAll[dateKey] = [];
-      const now = new Date();
-      const time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-      state.notesAll[dateKey].push({ id: uid(), time, text });
-      saveNotes();
-      input.value = '';
-      renderNotes(dateKey);
-    };
-    document.getElementById('ops-add-note').onclick = addNote;
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') addNote(); });
-
-    document.querySelectorAll('[data-action="del-note"]').forEach(btn => {
-      btn.onclick = () => {
-        const id = btn.dataset.id;
-        state.notesAll[dateKey] = (state.notesAll[dateKey] || []).filter(n => n.id !== id);
-        saveNotes();
-        renderNotes(dateKey);
-      };
-    });
-  }
-
-  function attachFitnessHandlers() {
-    document.getElementById('ops-fit-add').onclick = () => {
-      const key = document.getElementById('ops-fit-metric').value;
-      const raw = document.getElementById('ops-fit-value').value;
-      const date = document.getElementById('ops-fit-date').value || fmtDate(new Date());
-      const val = parseMetricValue(key, raw);
-      if (val === null) {
-        toast('Could not read "' + raw + '" — ' + (METRICS[key].kind === 'time' ? 'use mm:ss, e.g. 9:30' : 'use a number'), true);
-        return;
-      }
-      state.fitness.entries.push({ id: uid(), metric: key, value: val, date: date });
-      saveFitness();
-      document.getElementById('ops-fit-value').value = '';
-      toast(METRICS[key].label + ' logged: ' + fmtMetricValue(key, val));
-      renderFitness();
-    };
-
-    function setTargetFor(key) {
-      const m = METRICS[key];
-      const cur = state.fitness.targets[key];
-      const raw = prompt(
-        'Target for ' + m.label + (m.kind === 'time' ? ' (mm:ss)' : ' (' + m.unit + ')') + ':',
-        cur !== undefined && cur !== null ? fmtMetricValue(key, cur) : ''
-      );
-      if (raw === null) return;
-      if (!String(raw).trim()) {
-        delete state.fitness.targets[key];
-        saveFitness(); renderFitness();
-        toast('Target cleared for ' + m.label);
-        return;
-      }
-      const val = parseMetricValue(key, raw);
-      if (val === null) { toast('Could not read that target', true); return; }
-      state.fitness.targets[key] = val;
-      saveFitness(); renderFitness();
-      toast(m.label + ' target set to ' + fmtMetricValue(key, val));
-    }
-
-    document.getElementById('ops-fit-target').onclick = () => {
-      setTargetFor(document.getElementById('ops-fit-metric').value);
-    };
-    document.querySelectorAll('[data-action="set-target"]').forEach(btn => {
-      btn.onclick = () => setTargetFor(btn.dataset.metric);
-    });
-  }
-
   function escapeHtml(s) {
     const d = document.createElement('div');
     d.textContent = s;
@@ -2021,7 +1682,6 @@
       habitLog: state.habitLog,
       template: state.template,
       targets: state.targets,
-      fitness: state.fitness,
       notes: state.notesAll
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -2050,8 +1710,7 @@
       const counts = [
         Object.keys(data.schedule || {}).length + ' scheduled day(s)',
         (data.habits || []).length + ' habit(s)',
-        Object.keys(data.habitLog || {}).length + ' logged day(s)',
-        ((data.fitness && data.fitness.entries) || []).length + ' fitness entr(ies)'
+        Object.keys(data.habitLog || {}).length + ' logged day(s)'
       ].join('\n');
       if (!confirm('Restore this backup?\n\n' + counts + '\n\nThis REPLACES everything currently on this device.')) return;
 
@@ -2060,12 +1719,8 @@
       state.habitLog    = data.habitLog || {};
       state.template    = Array.isArray(data.template) ? data.template : [];
       state.targets     = Object.assign({}, DEFAULT_TARGETS, data.targets || {});
-      state.fitness     = {
-        entries: (data.fitness && Array.isArray(data.fitness.entries)) ? data.fitness.entries : [],
-        targets: (data.fitness && data.fitness.targets) ? data.fitness.targets : {}
-      };
       saveSchedule(); saveHabits(); saveHabitLog();
-      saveTemplate(); saveTargets(); saveFitness();
+      saveTemplate(); saveTargets();
       updateCountdowns(); renderDateBar(); renderBody();
       toast('Backup restored');
     };
