@@ -1565,6 +1565,68 @@
     `;
   }
 
+  function renderNotes(dateKey) {
+    const notes = (state.notesAll[dateKey] || []).slice().sort((a, b) => a.time.localeCompare(b.time));
+
+    const html = `
+      <div class="col-head">
+        <h3>Daily Notes</h3>
+        <span class="tally">${notes.length} ${notes.length === 1 ? 'entry' : 'entries'}</span>
+      </div>
+      <div class="notes-form">
+        <input type="text" id="ops-new-note" placeholder="Add a note, thought, or reminder..." maxlength="500">
+        <button id="ops-add-note">Add</button>
+      </div>
+      <div id="ops-notes-list">
+        ${notes.length === 0
+          ? '<div class="empty-note">No notes today — add one above.</div>'
+          : notes.map(n => `
+            <div class="note-row" data-id="${n.id}">
+              <span class="note-time mono">${n.time}</span>
+              <span class="note-text">${escapeHtml(n.text)}</span>
+              <button class="note-del" data-action="del-note" data-id="${n.id}">×</button>
+            </div>
+          `).join('')}
+      </div>
+    `;
+
+    let sec = document.querySelector('.notes-section');
+    if (!sec) {
+      sec = document.createElement('div');
+      sec.className = 'notes-section';
+      const strip = document.querySelector('.priority-strip');
+      strip.parentNode.insertBefore(sec, strip);
+    }
+    sec.innerHTML = html;
+    attachNotesHandlers(dateKey);
+  }
+
+  function attachNotesHandlers(dateKey) {
+    const input = document.getElementById('ops-new-note');
+    const addNote = () => {
+      const text = input.value.trim();
+      if (!text) return;
+      if (!state.notesAll[dateKey]) state.notesAll[dateKey] = [];
+      const now = new Date();
+      const time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+      state.notesAll[dateKey].push({ id: uid(), time, text });
+      saveNotes();
+      input.value = '';
+      renderNotes(dateKey);
+    };
+    document.getElementById('ops-add-note').onclick = addNote;
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') addNote(); });
+
+    document.querySelectorAll('[data-action="del-note"]').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.dataset.id;
+        state.notesAll[dateKey] = (state.notesAll[dateKey] || []).filter(n => n.id !== id);
+        saveNotes();
+        renderNotes(dateKey);
+      };
+    });
+  }
+
   function escapeHtml(s) {
     const d = document.createElement('div');
     d.textContent = s;
